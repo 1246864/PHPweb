@@ -1,0 +1,8 @@
+# 条件：仅拦截直接通过 URL 访问该文件夹下的文件（排除内部 include 引入）
+# %{REQUEST_FILENAME} 是请求的实际文件路径，-f 表示“是文件”，-d 表示“是目录”
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+
+# 规则：将所有直接访问请求转发到 page_error/404.php（相对路径，基于当前文件夹）
+# [L] 表示“最后一条规则”，停止后续匹配；[NC] 表示“不区分大小写”
+RewriteRule ^(.*)$ ../page_error/404.php [L,NC]
