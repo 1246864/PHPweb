@@ -1,0 +1,6 @@
+RewriteEngine On
+
+# 仅转发「文件/目录不存在」的请求到 index.php，正常文件直接访问
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L]
