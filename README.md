@@ -1,18 +1,21 @@
 # PHPweb 项目
 
-一个简单的PHP Web应用程序，演示了基础的路由系统实现。
+一个简单的PHP Web应用程序，演示了基础的路由系统实现和集中化配置管理。
 
 ## 项目概述
 
-PHPweb是一个轻量级的PHP项目，最初作为学习示例，现已实现了基本的MVC架构和路由系统，使URL更加友好和代码更加组织化。
+PHPweb是一个轻量级的PHP项目，最初作为学习示例，现已实现了基本的MVC架构、路由系统和集中化配置管理，使URL更加友好、代码更加组织化，并且便于在不同环境中部署。
 
 ## 功能特性
 
-- ✅ 简单的路由系统
+- ✅ 简单的路由系统（静态和动态路由支持）
 - ✅ MVC架构分离
 - ✅ 响应式设计
 - ✅ 错误处理机制（404/500页面）
 - ✅ 基础的用户管理功能
+- ✅ 集中化配置管理
+- ✅ 灵活的环境适配
+- ✅ 可扩展的控制器系统
 
 ## 项目结构
 
@@ -44,6 +47,35 @@ PHPweb/
     └───500.php            # 500错误页面
 ```
 
+## 配置系统详解
+
+### 集中化配置管理
+
+所有配置项都集中在 `config/config.php` 文件中，包括：
+
+1. **网站配置**: 网站名称、URL、调试模式等
+2. **路由配置**: URL到控制器方法的映射规则
+3. **控制器配置**: 控制器目录、命名空间等
+4. **数据库配置**: 连接参数、字符集等
+5. **安全配置**: CSRF、XSS、SQL注入保护等
+6. **会话配置**: 会话生命周期、安全设置等
+
+### 环境适配
+
+通过修改配置文件即可适应不同的部署环境：
+
+```php
+// 生产环境
+$config['site']['url'] = 'https://yourdomain.com/PHPweb';
+$config['site']['debug'] = false;
+
+// 开发环境
+$config['site']['url'] = 'http://localhost/PHPweb';
+$config['site']['debug'] = true;
+```
+
+详细配置说明请参考 `config.example.md` 文件。
+
 ## 路由系统详解
 
 ### 路由器实现
@@ -53,13 +85,14 @@ PHPweb/
 1. **静态路由**: 直接映射URL到控制器方法
 2. **动态路由**: 支持URL参数传递（如 `user/{id}`）
 3. **自动分发**: 根据URL自动调用对应的控制器和方法
+4. **配置驱动**: 路由规则从配置文件加载
 
 ### 路由配置
 
-默认路由配置如下：
+路由配置位于 `config/config.php` 中：
 
 ```php
-$this->routes = [
+$config['routes'] = [
     '' => 'HomeController@index',
     'home' => 'HomeController@index',
     'user' => 'UserController@index',
@@ -106,29 +139,70 @@ $this->routes = [
    - Apache服务器（支持.htaccess重写）
    - MySQL数据库（可选）
 
-2. **配置步骤**
+2. **快速部署**
    - 克隆项目到Web目录
-   - 修改 `config/config.php` 中的数据库配置
+   - 修改 `config/config.php` 中的基础配置
    - 确保Apache启用 `mod_rewrite` 模块
    - 设置正确的文件权限
 
-3. **访问方式**
+3. **环境适配配置**
+   
+   **生产环境配置示例**：
+   ```php
+   $config['site']['url'] = 'https://yourdomain.com/PHPweb';
+   $config['site']['debug'] = false;
+   $config['db']['host'] = 'your-production-db-host';
+   $config['db']['user'] = 'your-production-db-user';
+   $config['db']['password'] = 'your-production-db-password';
+   ```
+   
+   **开发环境配置示例**：
+   ```php
+   $config['site']['url'] = 'http://localhost/PHPweb';
+   $config['site']['debug'] = true;
+   $config['db']['host'] = 'localhost';
+   $config['db']['user'] = 'root';
+   $config['db']['password'] = 'root';
+   ```
+
+4. **访问方式**
    - 通过浏览器访问项目URL
-   - 默认首页：`http://yourdomain.com/PHPweb/`
+   - 默认首页：根据 `$config['site']['url']` 配置访问
 
 ## 开发指南
 
 ### 添加新路由
 
-1. 在 `include/router.php` 的路由配置中添加新规则
+1. 在 `config/config.php` 的 `$config['routes']` 数组中添加新规则
 2. 创建对应的控制器和方法
 3. 可选：创建视图文件
+
+```php
+// 在配置文件中添加路由
+$config['routes']['new/page'] = 'NewController@methodName';
+```
 
 ### 添加新控制器
 
 1. 在 `controllers/` 目录下创建新的控制器文件
-2. 继承基础控制器结构
+2. 使用全局配置变量获取配置信息
 3. 实现所需的方法
+
+```php
+class NewController {
+    public function methodName() {
+        global $config;
+        $siteName = $config['site']['name'];
+        // 控制器逻辑
+    }
+}
+```
+
+### 配置管理
+
+- 所有配置项都在 `config/config.php` 中管理
+- 使用 `global $config;` 在控制器中访问配置
+- 参考 `config.example.md` 了解不同环境的配置方法
 
 ### 修改样式
 
@@ -155,6 +229,7 @@ $this->routes = [
 
 - **v1.0** - 基础项目结构
 - **v1.1** - 添加路由系统和MVC架构
+- **v1.2** - 实现集中化配置管理和环境适配
 
 ## 许可证
 

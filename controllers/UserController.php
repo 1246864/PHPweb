@@ -6,19 +6,22 @@ include_once __DIR__ . '/../include/header.php';
 class UserController {
     
     public function index() {
-        include_once __DIR__ . '/../config/config.php';
+        global $config;
+        $siteName = $config['site']['name'];
+        $siteUrl = $config['site']['url'];
+        $pageTitle = '用户中心';
         ?>
         <!DOCTYPE html>
         <html lang="zh-CN">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>用户中心 - <?php echo $config['site']['name']; ?></title>
+            <title><?php echo $pageTitle . $config['site']['title_separator'] . $siteName; ?></title>
             <link rel="stylesheet" href="/PHPweb/css/css.css">
         </head>
         <body>
             <header>
-                <h1><?php echo $config['site']['name']; ?></h1>
+                <h1><?php echo $siteName; ?></h1>
                 <nav>
                     <a href="/PHPweb/">首页</a>
                     <a href="/PHPweb/about">关于</a>
@@ -38,7 +41,7 @@ class UserController {
             </main>
             
             <footer>
-                <p>&copy; <?php echo date('Y'); ?> <?php echo $config['site']['name']; ?></p>
+                <p>&copy; <?php echo date('Y'); ?> <?php echo $siteName; ?></p>
             </footer>
         </body>
         </html>
@@ -46,19 +49,22 @@ class UserController {
     }
     
     public function profile() {
-        include_once __DIR__ . '/../config/config.php';
+        global $config;
+        $siteName = $config['site']['name'];
+        $siteUrl = $config['site']['url'];
+        $pageTitle = '个人资料';
         ?>
         <!DOCTYPE html>
         <html lang="zh-CN">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>个人资料 - <?php echo $config['site']['name']; ?></title>
+            <title><?php echo $pageTitle . $config['site']['title_separator'] . $siteName; ?></title>
             <link rel="stylesheet" href="/PHPweb/css/css.css">
         </head>
         <body>
             <header>
-                <h1><?php echo $config['site']['name']; ?></h1>
+                <h1><?php echo $siteName; ?></h1>
                 <nav>
                     <a href="/PHPweb/">首页</a>
                     <a href="/PHPweb/about">关于</a>
@@ -76,7 +82,7 @@ class UserController {
             </main>
             
             <footer>
-                <p>&copy; <?php echo date('Y'); ?> <?php echo $config['site']['name']; ?></p>
+                <p>&copy; <?php echo date('Y'); ?> <?php echo $siteName; ?></p>
             </footer>
         </body>
         </html>
@@ -84,19 +90,22 @@ class UserController {
     }
     
     public function login() {
-        include_once __DIR__ . '/../config/config.php';
+        global $config;
+        $siteName = $config['site']['name'];
+        $siteUrl = $config['site']['url'];
+        $pageTitle = '用户登录';
         ?>
         <!DOCTYPE html>
         <html lang="zh-CN">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>用户登录 - <?php echo $config['site']['name']; ?></title>
+            <title><?php echo $pageTitle . $config['site']['title_separator'] . $siteName; ?></title>
             <link rel="stylesheet" href="/PHPweb/css/css.css">
         </head>
         <body>
             <header>
-                <h1><?php echo $config['site']['name']; ?></h1>
+                <h1><?php echo $siteName; ?></h1>
                 <nav>
                     <a href="/PHPweb/">首页</a>
                     <a href="/PHPweb/about">关于</a>
@@ -124,7 +133,7 @@ class UserController {
             </main>
             
             <footer>
-                <p>&copy; <?php echo date('Y'); ?> <?php echo $config['site']['name']; ?></p>
+                <p>&copy; <?php echo date('Y'); ?> <?php echo $siteName; ?></p>
             </footer>
         </body>
         </html>
@@ -132,9 +141,9 @@ class UserController {
     }
     
     public function logout() {
-        include_once __DIR__ . '/../config/config.php';
+        global $config;
         // 这里可以添加退出登录的逻辑
-        header('Location: /PHPweb/');
+        header('Location: ' . $config['site']['url']);
         exit();
     }
 }

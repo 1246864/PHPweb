@@ -4,19 +4,13 @@ include_once __DIR__ . '/_PRE.php';
 
 class Router {
     private $routes = [];
+    private $config = [];
     
     public function __construct() {
-        // 默认路由配置
-        $this->routes = [
-            '' => 'HomeController@index',
-            'home' => 'HomeController@index',
-            'user' => 'UserController@index',
-            'user/profile' => 'UserController@profile',
-            'user/login' => 'UserController@login',
-            'user/logout' => 'UserController@logout',
-            'about' => 'HomeController@about',
-            'contact' => 'HomeController@contact'
-        ];
+        // 从配置文件加载路由配置
+        global $config;
+        $this->config = $config;
+        $this->routes = $config['routes'];
     }
     
     /**
@@ -25,7 +19,14 @@ class Router {
     public function getPath() {
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $path = trim($path, '/');
-        $path = str_replace('PHPweb/', '', $path); // 移除项目目录名
+        
+        // 从配置中获取基础路径并移除
+        $baseUrl = trim(parse_url($this->config['site']['url'], PHP_URL_PATH), '/');
+        if ($baseUrl && strpos($path, $baseUrl) === 0) {
+            $path = substr($path, strlen($baseUrl));
+            $path = trim($path, '/');
+        }
+        
         return $path;
     }
     
@@ -89,7 +90,10 @@ class Router {
     private function callHandler($handler, $params = []) {
         list($controllerName, $methodName) = explode('@', $handler);
         
-        $controllerFile = __DIR__ . '/../controllers/' . $controllerName . '.php';
+        // 使用配置中的控制器目录和后缀
+        $controllerDir = $this->config['controllers']['directory'];
+        $controllerSuffix = $this->config['controllers']['suffix'];
+        $controllerFile = $controllerDir . $controllerName . '.php';
         
         if (file_exists($controllerFile)) {
             include_once $controllerFile;
