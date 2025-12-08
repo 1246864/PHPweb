@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GET参数测试页面</title>
+    <link rel="stylesheet" href="/PHPweb/css/css.css">
+    <style>
+        .demo-section {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .demo-section h3 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .test-link {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 12px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .test-link:hover {
+            background-color: #0056b3;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>PHPweb 路由系统 - GET参数演示</h1>
+        <nav>
+            <a href="/PHPweb/">首页</a>
+            <a href="/PHPweb/demo/get">传统GET参数</a>
+            <a href="/PHPweb/demo/route">路由参数</a>
+            <a href="/PHPweb/demo/mixed/electronics?page=2&sort=price">混合参数</a>
+            <a href="/PHPweb/demo/secure">安全处理</a>
+        </nav>
+    </header>
+    
+    <main>
+        <h2>路由系统中的GET参数处理演示</h2>
+        <p>这个页面展示了在路由系统中如何处理各种类型的参数。</p>
+        
+        <div class="demo-section">
+            <h3>1. 传统GET参数（查询字符串）</h3>
+            <p>参数通过URL的查询字符串传递，格式为 ?key1=value1&key2=value2</p>
+            
+            <div class="code-block">
+                访问格式：/PHPweb/demo/get?id=123&name=test&page=2
+            </div>
+            
+            <a href="/PHPweb/demo/get?id=123&name=test&page=2" class="test-link">测试：id=123&name=test&page=2</a>
+            <a href="/PHPweb/demo/get?name=example&age=25" class="test-link">测试：name=example&age=25</a>
+            <a href="/PHPweb/demo/get" class="test-link">测试：无参数</a>
+        </div>
+        
+        <div class="demo-section">
+            <h3>2. 路由参数（动态路由）</h3>
+            <p>参数作为URL路径的一部分，更加SEO友好</p>
+            
+            <div class="code-block">
+                访问格式：/PHPweb/demo/mixed/electronics（electronics是category参数）
+            </div>
+            
+            <a href="/PHPweb/demo/mixed/electronics?page=1&sort=price" class="test-link">测试：电子产品分类</a>
+            <a href="/PHPweb/demo/mixed/books?page=2&sort=name" class="test-link">测试：图书分类</a>
+            <a href="/PHPweb/demo/mixed/clothes" class="test-link">测试：服装分类</a>
+        </div>
+        
+        <div class="demo-section">
+            <h3>3. 混合参数使用</h3>
+            <p>结合路由参数和查询参数，既有语义化路径，又有灵活的查询选项</p>
+            
+            <div class="code-block">
+                访问格式：/PHPweb/demo/mixed/{category}?page=1&sort=price&filter=new
+            </div>
+            
+            <a href="/PHPweb/demo/mixed/electronics?page=2&sort=price&filter=brand" class="test-link">测试：电子产品+多参数</a>
+            <a href="/PHPweb/demo/mixed/books?sort=date&year=2023" class="test-link">测试：图书+自定义参数</a>
+        </div>
+        
+        <div class="demo-section">
+            <h3>4. 安全参数处理</h3>
+            <p>演示如何验证和清理用户输入，防止安全漏洞</p>
+            
+            <div class="code-block">
+                包含：类型验证、范围检查、格式验证、XSS防护
+            </div>
+            
+            <a href="/PHPweb/demo/secure?username=test123&age=25&email=test@example.com" class="test-link">测试：有效参数</a>
+            <a href="/PHPweb/demo/secure?username=ab&age=200&email=invalid" class="test-link">测试：无效参数</a>
+        </div>
+        
+        <div class="demo-section">
+            <h3>代码示例</h3>
+            
+            <h4>获取传统GET参数：</h4>
+            <div class="code-block">
+// 基本获取
+$id = isset($_GET['id']) ? $_GET['id'] : '默认值';
+
+// PHP 7+ 简化语法
+$name = $_GET['name'] ?? '默认值';
+
+// 类型转换
+$page = (int)($_GET['page'] ?? 1);
+
+// 安全输出
+echo htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+            </div>
+            
+            <h4>处理路由参数：</h4>
+            <div class="code-block">
+// 控制器方法签名
+public function userProfile($userId = null) {
+    $id = $userId ?? 'guest';
+    // 处理逻辑
+}
+
+// 路由配置
+'demo/user/{id}' => 'DemoController@userProfile'
+            </div>
+            
+            <h4>参数验证：</h4>
+            <div class="code-block">
+// 邮箱验证
+$email = filter_var($_GET['email'], FILTER_SANITIZE_EMAIL);
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    // 处理错误
+}
+
+// 数字验证
+if (ctype_digit($_GET['age'])) {
+    $age = (int)$_GET['age'];
+}
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>最佳实践建议</h3>
+            <ul>
+                <li><strong>路由参数</strong>：用于表示资源层级（如分类、ID）</li>
+                <li><strong>查询参数</strong>：用于表示选项和筛选（如页码、排序）</li>
+                <li><strong>始终验证</strong>：对所有用户输入进行验证和清理</li>
+                <li><strong>安全输出</strong>：使用htmlspecialchars()防止XSS攻击</li>
+                <li><strong>提供默认值</strong>：为可选参数提供合理的默认值</li>
+                <li><strong>类型转换</strong>：对数值参数进行适当的类型转换</li>
+            </ul>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; <?php echo date('Y'); ?> PHPweb项目 - 路由系统演示</p>
+    </footer>
+</body>
+</html>

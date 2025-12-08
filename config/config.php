@@ -44,6 +44,9 @@ if (!isset($config["loaded"])) {
     // 'user/profile' => 'UserController@profile' // /user/profile 访问个人资料
     // 'user/login' => 'UserController@login'     // /user/login 访问登录页面
     // 
+    // 动态路由示例（带参数）：
+    // 'demo/user/{id}' => 'DemoController@userProfile' // /demo/user/123 会传递 $id=123 参数
+    // 
     // 注意：路由器会按照这个配置来分发请求，修改路由后需要确保对应的控制器和方法存在
     $config['routes'] = array(
         '' => 'HomeController@index',              // 网站首页
@@ -53,7 +56,13 @@ if (!isset($config["loaded"])) {
         'user/login' => 'UserController@login',     // 用户登录
         'user/logout' => 'UserController@logout',   // 用户退出
         'about' => 'HomeController@about',         // 关于页面
-        'contact' => 'HomeController@contact'      // 联系页面
+        'contact' => 'HomeController@contact',      // 联系页面
+        
+        // GET参数演示路由
+        'demo/get' => 'DemoController@getParams',  // 传统GET参数演示
+        'demo/route' => 'DemoController@userProfile', // 路由参数演示
+        'demo/mixed/{category}' => 'DemoController@mixedParams', // 混合参数演示
+        'demo/secure' => 'DemoController@secureParams', // 安全参数处理演示
     );
 
     // 控制器配置 - 控制器文件和类的相关设置
