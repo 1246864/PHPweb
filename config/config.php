@@ -31,23 +31,43 @@ if (!isset($config["loaded"])) {
         'meta_keywords' => 'PHP,路由系统,MVC,Web应用' // 网站关键词
     );
 
-    // 路由配置
+    // 路由配置 - URL路径到控制器方法的映射
+    // 
+    // 路由格式：'URL路径' => '控制器名@方法名'
+    // 
+    // 静态路由示例：
+    // '' => 'HomeController@index'              // 网站根路径访问首页
+    // 'about' => 'HomeController@about'         // /about 访问关于页面
+    // 'user' => 'UserController@index'          // /user 访问用户中心
+    // 
+    // 多级路径示例：
+    // 'user/profile' => 'UserController@profile' // /user/profile 访问个人资料
+    // 'user/login' => 'UserController@login'     // /user/login 访问登录页面
+    // 
+    // 注意：路由器会按照这个配置来分发请求，修改路由后需要确保对应的控制器和方法存在
     $config['routes'] = array(
-        '' => 'HomeController@index',
-        'home' => 'HomeController@index',
-        'user' => 'UserController@index',
-        'user/profile' => 'UserController@profile',
-        'user/login' => 'UserController@login',
-        'user/logout' => 'UserController@logout',
-        'about' => 'HomeController@about',
-        'contact' => 'HomeController@contact'
+        '' => 'HomeController@index',              // 网站首页
+        'home' => 'HomeController@index',          // 首页别名
+        'user' => 'UserController@index',          // 用户中心
+        'user/profile' => 'UserController@profile', // 用户个人资料
+        'user/login' => 'UserController@login',     // 用户登录
+        'user/logout' => 'UserController@logout',   // 用户退出
+        'about' => 'HomeController@about',         // 关于页面
+        'contact' => 'HomeController@contact'      // 联系页面
     );
 
-    // 控制器配置
+    // 控制器配置 - 控制器文件和类的相关设置
+    // 
+    // 这些配置告诉路由器如何找到和加载控制器：
+    // - namespace: 控制器的命名空间（当前为空，表示全局命名空间）
+    // - directory: 控制器文件所在的目录路径
+    // - suffix: 控制器类名的后缀，便于识别
+    // 
+    // 路由器会根据这些配置来构建控制器文件的完整路径
     $config['controllers'] = array(
-        'namespace' => '',           // 控制器命名空间
-        'directory' => __DIR__ . '/../controllers/', // 控制器目录
-        'suffix' => 'Controller'     // 控制器类名后缀
+        'namespace' => '',                           // 控制器命名空间（留空表示全局）
+        'directory' => __DIR__ . '/../controllers/', // 控制器文件目录
+        'suffix' => 'Controller'                     // 控制器类名后缀
     );
 
     // 视图配置

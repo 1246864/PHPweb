@@ -1,12 +1,39 @@
 <?php
-// 引入预处理库
+// 引入预处理库 - 提供基础功能和错误处理
 include_once __DIR__ . '/../include/_PRE.php';
 include_once __DIR__ . '/../include/header.php';
 
+/**
+ * 用户控制器 - 处理用户相关功能
+ * 
+ * 这个控制器负责处理所有与用户相关的请求：
+ * 1. 用户中心首页
+ * 2. 用户个人资料
+ * 3. 用户登录
+ * 4. 用户退出
+ * 
+ * 对应的路由配置在 config/config.php 中：
+ * - 'user' -> UserController@index
+ * - 'user/profile' -> UserController@profile
+ * - 'user/login' -> UserController@login
+ * - 'user/logout' -> UserController@logout
+ */
 class UserController {
     
+    /**
+     * 用户中心首页 - 显示用户功能菜单
+     * 
+     * 这个方法对应路由：
+     * - 'user'
+     * 
+     * 当用户访问 /PHPweb/user 时，路由器会调用这个方法
+     * 显示用户中心的导航菜单和功能列表
+     */
     public function index() {
+        // 获取全局配置变量
         global $config;
+        
+        // 从配置中提取常用变量
         $siteName = $config['site']['name'];
         $siteUrl = $config['site']['url'];
         $pageTitle = '用户中心';
@@ -48,8 +75,20 @@ class UserController {
         <?php
     }
     
+    /**
+     * 个人资料页面 - 显示用户详细信息
+     * 
+     * 这个方法对应路由：
+     * - 'user/profile'
+     * 
+     * 当用户访问 /PHPweb/user/profile 时，路由器会调用这个方法
+     * 显示用户的个人资料信息
+     */
     public function profile() {
+        // 获取全局配置变量
         global $config;
+        
+        // 从配置中提取常用变量
         $siteName = $config['site']['name'];
         $siteUrl = $config['site']['url'];
         $pageTitle = '个人资料';
@@ -89,8 +128,20 @@ class UserController {
         <?php
     }
     
+    /**
+     * 用户登录页面 - 显示登录表单
+     * 
+     * 这个方法对应路由：
+     * - 'user/login'
+     * 
+     * 当用户访问 /PHPweb/user/login 时，路由器会调用这个方法
+     * 显示用户登录表单，处理登录逻辑
+     */
     public function login() {
+        // 获取全局配置变量
         global $config;
+        
+        // 从配置中提取常用变量
         $siteName = $config['site']['name'];
         $siteUrl = $config['site']['url'];
         $pageTitle = '用户登录';
@@ -140,10 +191,25 @@ class UserController {
         <?php
     }
     
+    /**
+     * 用户退出 - 处理用户退出登录
+     * 
+     * 这个方法对应路由：
+     * - 'user/logout'
+     * 
+     * 当用户访问 /PHPweb/user/logout 时，路由器会调用这个方法
+     * 处理用户退出登录的逻辑，然后重定向到首页
+     */
     public function logout() {
+        // 获取全局配置变量
         global $config;
+        
         // 这里可以添加退出登录的逻辑
+        // 例如：清除会话数据、销毁会话等
+        
+        // 重定向到网站首页（从配置中获取URL）
+        // 这样可以确保重定向地址在不同环境中都是正确的
         header('Location: ' . $config['site']['url']);
-        exit();
+        exit(); // 确保脚本停止执行
     }
 }

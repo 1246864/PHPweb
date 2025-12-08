@@ -1,6 +1,33 @@
+# Apache URL重写规则 - 路由系统的重要组成部分
+# 
+# 这个文件配置了Apache服务器的URL重写规则，是路由系统工作的基础
+# 它的作用是将所有不指向真实文件的请求重定向到index.php
+# 这样路由器就可以解析URL并分发到对应的控制器
+
+# 启用URL重写引擎
 RewriteEngine On
 
-# 仅转发「文件/目录不存在」的请求到 index.php，正常文件直接访问
+# 重写条件：仅转发「文件/目录不存在」的请求到 index.php
+# 
+# %{REQUEST_FILENAME} !-f  : 如果请求的路径不是一个存在的文件
+# %{REQUEST_FILENAME} !-d  : 如果请求的路径不是一个存在的目录
+# 
+# 这样做的目的是：
+# 1. 保护静态文件（CSS、JS、图片等）直接访问
+# 2. 保护真实存在的目录直接访问
+# 3. 只将"虚拟"的URL（路由）转发给PHP处理
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
+
+# 重写规则：将所有符合条件的请求重定向到index.php
+# 
+# ^(.*)$    : 匹配任意URL路径（除了已经排除的文件和目录）
+# index.php : 重定向的目标文件（前端控制器）
+# [L]       : Last rule - 如果匹配这条规则，停止处理后续规则
+# [QSA]     : Query String Append - 保留原始的查询参数（如 ?id=123）
+#
+# 示例：
+# /user/profile -> index.php (路由器解析为 UserController@profile)
+# /about?id=5 -> index.php?id=5 (保留查询参数)
+# /css/style.css -> 直接访问（不重定向，因为是真实文件）
 RewriteRule ^(.*)$ index.php [L,QSA]

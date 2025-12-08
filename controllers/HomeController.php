@@ -1,12 +1,37 @@
 <?php
-// 引入预处理库
+// 引入预处理库 - 提供基础功能和错误处理
 include_once __DIR__ . '/../include/_PRE.php';
 include_once __DIR__ . '/../include/header.php';
 
+/**
+ * 首页控制器 - 处理网站首页和静态页面
+ * 
+ * 控制器是MVC架构中的C（Controller），负责：
+ * 1. 接收路由器分发的请求
+ * 2. 处理业务逻辑
+ * 3. 调用视图或直接输出HTML
+ * 
+ * 这个控制器处理以下路由：
+ * - '' 或 'home' -> index() 方法
+ * - 'about' -> about() 方法  
+ * - 'contact' -> contact() 方法
+ */
 class HomeController {
     
+    /**
+     * 首页方法 - 处理网站首页请求
+     * 
+     * 这个方法对应路由：
+     * - '' (空字符串，根路径)
+     * - 'home'
+     * 
+     * 路由器会根据 config/config.php 中的路由配置调用这个方法
+     */
     public function index() {
+        // 获取全局配置变量，包含网站的所有设置
         global $config;
+        
+        // 从配置中提取常用变量，方便在模板中使用
         $siteName = $config['site']['name'];
         $siteUrl = $config['site']['url'];
         $pageTitle = '首页';
@@ -44,8 +69,19 @@ class HomeController {
         <?php
     }
     
+    /**
+     * 关于页面方法 - 处理关于我们页面请求
+     * 
+     * 这个方法对应路由：
+     * - 'about'
+     * 
+     * 当用户访问 /PHPweb/about 时，路由器会调用这个方法
+     */
     public function about() {
+        // 获取全局配置变量
         global $config;
+        
+        // 从配置中提取常用变量
         $siteName = $config['site']['name'];
         $siteUrl = $config['site']['url'];
         $pageTitle = '关于我们';
@@ -83,8 +119,19 @@ class HomeController {
         <?php
     }
     
+    /**
+     * 联系页面方法 - 处理联系我们页面请求
+     * 
+     * 这个方法对应路由：
+     * - 'contact'
+     * 
+     * 当用户访问 /PHPweb/contact 时，路由器会调用这个方法
+     */
     public function contact() {
+        // 获取全局配置变量
         global $config;
+        
+        // 从配置中提取常用变量
         $siteName = $config['site']['name'];
         $siteUrl = $config['site']['url'];
         $pageTitle = '联系我们';
