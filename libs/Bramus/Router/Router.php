@@ -398,7 +398,7 @@ class Router
       $pattern = preg_replace('/\/{(.*?)}/', '/(.*?)', $pattern);
 
       // we may have a match!
-      return boolval(preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_OFFSET_CAPTURE));
+      return (bool)(preg_match_all('#^' . $pattern . '$#', $uri, $matches, PREG_OFFSET_CAPTURE));
     }
 
     /**

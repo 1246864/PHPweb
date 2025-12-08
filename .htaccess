@@ -1,6 +1,20 @@
-RewriteEngine On
 
-# 仅转发「文件/目录不存在」的请求到 index.php，正常文件直接访问
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ page_error/404.php [L]
+# 开启URL重写引擎，启用mod_rewrite规则
+RewriteEngine On
+# 若请求URI为/PHPweb/或/PHPweb（末尾可选斜杠）
+RewriteCond %{REQUEST_URI} ^/PHPweb/?$
+# 将匹配到的请求全部重写到router.php，并停止后续规则    
+RewriteRule ^(.*)$ router.php [L]
+
+
+<IfModule mod_rewrite.c>
+# 开启 URL 重写引擎
+    RewriteEngine On
+
+# 如果请求的文件不存在
+    RewriteCond %{REQUEST_FILENAME} !-f
+# 如果请求的目录也不存在
+    RewriteCond %{REQUEST_FILENAME} !-d
+# 将所有请求重写到 index.php，并标记为最后一条规则
+    RewriteRule ^ router.php [L]
+</IfModule>
