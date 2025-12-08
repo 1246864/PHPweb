@@ -27,4 +27,26 @@ if (!isset($x__RPE_OK)) {
         include_once __DIR__.'/../page_error/404.php';
         exit();
     }
+
+    // 501 错误页面快捷跳转
+    function Error_501($error_message) {
+        // 清空页面
+        ob_end_clean();
+        // 设置 HTTP 状态码为 501
+        http_response_code(501);
+        // 转发到 501 错误页面, 并传递错误信息
+        include_once __DIR__.'/../page_error/501.php';
+        exit();
+    }
+
+    // 快捷动态添加路由跳转配置
+    // Router_Page(url, 具体页面, [请求方式])
+    $config['router_Page'] = array();
+    function add_Page($page_name, $page_file, $method = 'ALL') {
+        global $config;
+        $config['router_Page'][$page_name] = array(
+            'file' => $page_file,  // 具体页面
+            'method' => $method,     // 请求方式
+        );
+    }
 }

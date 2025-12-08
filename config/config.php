@@ -1,4 +1,6 @@
 <?php
+include_once __DIR__ . '/../include/_PRE.php';
+
 
 /**
  * 配置文件
@@ -25,8 +27,18 @@ if (!isset($config["loaded"])) {
     $config['site'] = array(
         'name' => '网站名称',       // 网站名称
         'url' => 'http://localhost/PHPweb',  // 网站URL
-        'debug' => true             // 调试模式，生产环境请设置为false
+        'debug' => true,             // 调试模式，生产环境请设置为false
+
+    );
+    
+    // 调试配置
+    $config['debug'] = array(
+        'more_debug' => true,        // 是否启用进阶调试
+        'clear_debug' => true        // 是否提炼调试信息(避免调试输出受HTML标签影响)
     );
 
     // 其他配置项可以根据需要添加
+
+    add_Page('/', 'index.php');
+    add_Page('/test', 'test.php');
 }
