@@ -28,11 +28,11 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `user` (
   `id` int(11) NOT NULL COMMENT '用户ID',
-  `username` varchar(255) CHARACTER SET utf8 NOT NULL COMMENT '用户名',
-  `password` varchar(255) CHARACTER SET utf8 NOT NULL COMMENT '密码',
-  `email` varchar(255) CHARACTER SET utf8 NOT NULL COMMENT '用户邮箱',
-  `flag` enum('user','writer','admin') CHARACTER SET utf8 NOT NULL DEFAULT 'user' COMMENT '用户权限'
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `username` varchar(255) NOT NULL COMMENT '用户名',
+  `password` varchar(255) NOT NULL COMMENT '密码',
+  `email` varchar(255) NOT NULL COMMENT '用户邮箱',
+  `flag` enum('user','writer','admin') NOT NULL DEFAULT 'user' COMMENT '用户权限'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indexes for dumped tables
@@ -53,7 +53,7 @@ ALTER TABLE `user`
 -- 使用表AUTO_INCREMENT `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户ID', AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户ID', AUTO_INCREMENT=1;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
