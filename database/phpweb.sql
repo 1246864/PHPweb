@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: 2025-12-09 03:55:47
+-- Generation Time: 2025-12-09 04:33:23
 -- 服务器版本： 10.1.21-MariaDB
 -- PHP Version: 5.6.30
 
@@ -28,9 +28,10 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `user` (
   `id` int(11) NOT NULL COMMENT '用户ID',
-  `username` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL
+  `username` varchar(255) CHARACTER SET utf8 NOT NULL COMMENT '用户名',
+  `password` varchar(255) CHARACTER SET utf8 NOT NULL COMMENT '密码',
+  `email` varchar(255) CHARACTER SET utf8 NOT NULL COMMENT '用户邮箱',
+  `flag` enum('user','writer','admin') CHARACTER SET utf8 NOT NULL DEFAULT 'user' COMMENT '用户权限'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
@@ -41,7 +42,8 @@ CREATE TABLE `user` (
 -- Indexes for table `user`
 --
 ALTER TABLE `user`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- 在导出的表使用AUTO_INCREMENT
@@ -51,7 +53,7 @@ ALTER TABLE `user`
 -- 使用表AUTO_INCREMENT `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户ID';
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户ID', AUTO_INCREMENT=13;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
