@@ -9,20 +9,28 @@ if (!isset($conn)) {
     if(!isset($config['db'])) {
         Error_500('配置文件中未定义数据库连接信息。');
     }
-    // 从配置文件获取数据库连接信息
-    $conn = mysqli_connect(
-        $config['db']['host'],
-        $config['db']['user'],
-        $config['db']['password'],
-        $config['db']['database']
-    );
 
-    if (!$conn) {
-        http_response_code(500);
-        // 通过500页面显示错误信息
-        Error_500('数据库连接失败，请检查配置文件。<br/>' . mysqli_connect_error());
+    if ($config['db_enable']){
+        // 从配置文件获取数据库连接信息
+        $conn = mysqli_connect(
+            $config['db']['host'],
+            $config['db']['user'],
+            $config['db']['password'],
+            $config['db']['database']
+        );
+
+        if (!$conn) {
+            http_response_code(500);
+            // 通过500页面显示错误信息
+            Error_500('数据库连接失败，请检查配置文件。<br/>' . mysqli_connect_error());
+            
+        }
+        $conn->query('set names ' . $config['db']['charset']);
+    }
+    else{
+        $conn = null;
     }
 
-    $conn->query('set names ' . $config['db']['charset']);
+    
     date_default_timezone_set($config['timezone']);
 }

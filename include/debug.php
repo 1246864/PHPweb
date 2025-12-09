@@ -12,7 +12,6 @@ if (!$config["site"]["debug"]) {
         if ($config["debug"]["clear_debug"]) {
             // 清空页面
             ob_end_clean();
-            include_once __DIR__ . '/../page_error/500.php';
         }
 
         $errorType = [
@@ -41,6 +40,10 @@ if (!$config["site"]["debug"]) {
         debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         echo "</pre>";
         echo "</div>";
+        if ($config["debug"]["clear_debug"]) {
+            // 停止
+            exit;
+        }
         return true;
     });
 
@@ -60,5 +63,9 @@ if (!$config["site"]["debug"]) {
         echo $exception->getTraceAsString();
         echo "</pre>";
         echo "</div>";
+        if ($config["debug"]["clear_debug"]) {
+            // 停止
+            exit;
+        }
     });
 }

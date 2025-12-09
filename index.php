@@ -9,6 +9,9 @@
 <body>
     <h1>Hello World!</h1>
     <p>这是 PHPweb 项目的首页。</p>
+<?php
 
+
+?>
 </body>
 </html>
