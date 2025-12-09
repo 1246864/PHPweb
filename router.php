@@ -4,11 +4,10 @@ include_once __DIR__ . '/include/header.php';
 include_once __DIR__ . '/libs/Bramus/Router/Router.php';
 include_once __DIR__ . '/config/config.php';
 
-
+global $router;
 if (!isset($router)) {
     $router = new \Bramus\Router\Router();
 
-    $_router_File__ = pathinfo(__FILE__, PATHINFO_BASENAME);
     foreach ($config['router_Page'] as $key => $value) {
         // 查看文件是否存在
         if (!file_exists(__DIR__ . '/' . $value['file'])) {

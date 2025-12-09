@@ -12,7 +12,7 @@ if (!isset($config["loaded"])) {
     $config['loaded'] = true;
 
     // 数据库配置
-    $config['db_enable'] = true;     // 是否启用数据库连接
+    $config['db_enable'] = false;     // 是否启用数据库连接
     $config['db'] = array(
         'host' => 'localhost',      // 数据库主机
         'user' => 'root',           // 数据库用户名
@@ -41,5 +41,6 @@ if (!isset($config["loaded"])) {
     // 其他配置项可以根据需要添加
 
     add_Page('/', 'index.php');
-    add_Page('/test', 'test.php');
+    add_Page('/test', 'bramus-example.php');
+    add_Page('/error', 'router.php');
 }
