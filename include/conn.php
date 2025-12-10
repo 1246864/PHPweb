@@ -3,7 +3,7 @@
 include_once __DIR__ . '/_PRE.php';
 
 // 引入配置文件
- include_once __DIR__.'/../config/config.php';
+include_once __DIR__.'/../config/config.php';
 
 if (!isset($conn)) {
     if(!isset($config['db'])) {

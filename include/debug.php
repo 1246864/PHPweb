@@ -9,6 +9,7 @@ if (!$config["site"]["debug"]) {
     set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 
         global $config;
+        echo "<meta charset='UTF-8'>";
         if ($config["debug"]["clear_debug"]) {
             // 清空页面
             ob_end_clean();
@@ -50,6 +51,7 @@ if (!$config["site"]["debug"]) {
     // 设置异常处理函数，用于捕获未捕获的异常
     set_exception_handler(function ($exception) {
 
+        echo "<meta charset='UTF-8'>";
         global $config;
         if ($config["debug"]["clear_debug"]) {
             // 清空页面
