@@ -15,8 +15,8 @@ include_once __DIR__ . '/function/user.php';
 <body>
     <h1>aaaaa</h1>
     <?php
-        // 测试为：有BUG
-        echo login('1', '2');
+        echo "___1_".user_register('j2yz', 'zyj123', '1278633').'<br/>';
+        echo "___2_".login('j2yz', 'zyj123').'<br/>';
     ?>    
 </body>
 

@@ -1,9 +1,9 @@
 <?php
 include_once __DIR__ . "/../config/config.php";
-if (!$config["site"]["debug"]) {
+if (!$config["debug"]["use_debug"]) {
     // 关闭调试模式，禁止PHP输出调试信息
 
-} else if ($config["site"]["debug"] && $config["debug"]["more_debug"]) {
+} else if ($config["debug"]["use_debug"] && $config["debug"]["more_debug"]) {
 
     // 设置自定义错误处理函数，用于显示更直观的错误堆栈
     set_error_handler(function ($errno, $errstr, $errfile, $errline) {
@@ -11,7 +11,7 @@ if (!$config["site"]["debug"]) {
         global $config;
         echo "<meta charset='UTF-8'>";
         if ($config["debug"]["clear_debug"]) {
-            // 清空页面
+            // 清空页面输出缓冲区，防止输出干扰调试信息
             ob_end_clean();
         }
 
@@ -54,7 +54,7 @@ if (!$config["site"]["debug"]) {
         echo "<meta charset='UTF-8'>";
         global $config;
         if ($config["debug"]["clear_debug"]) {
-            // 清空页面
+            // 清空页面输出缓冲区，防止输出干扰调试信息
             ob_end_clean();
         }
 

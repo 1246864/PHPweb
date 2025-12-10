@@ -8,6 +8,14 @@ if (!isset($x__RPE_OK)) {
     
     // 500 错误页面快捷跳转
     function Error_500($error_message) {
+        // 获取config信息
+        include_once __DIR__."/../config/config.php";
+        global $config;
+        if ($config['debug']['use_debug']) {
+            echo'<div style="color:red;font-size:30px;">'.$error_message.'</div>';
+            return;
+        }      // 开发环境下, 直接输出错误信息, 不触发500页面
+
         // 清空页面
         ob_end_clean();
         // 设置 HTTP 状态码为 500

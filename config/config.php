@@ -1,7 +1,7 @@
 <?php
 include_once __DIR__ . '/../include/_PRE.php';
 
-
+global $config;
 /**
  * 配置文件
  * 请根据实际情况修改以下配置
@@ -27,13 +27,12 @@ if (!isset($config["loaded"])) {
     // 网站基本配置
     $config['site'] = array(
         'name' => '网站名称',       // 网站名称
-        'url' => 'http://localhost:880/PHPweb',  // 网站URL
-        'debug' => true,             // 调试模式，生产环境请设置为false
-
+        'url' => 'http://localhost/PHPweb',  // 网站URL
     );
     
     // 调试配置
     $config['debug'] = array(
+        'use_debug' => true,        // 调试试模式，生产环境请设置为false
         'more_debug' => true,        // 是否启用进阶调试
         'clear_debug' => false        // 是否提炼最新调试信息(避免调试输出受HTML标签影响)
     );
