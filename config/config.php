@@ -36,11 +36,19 @@ if (!isset($config["loaded"])) {
         'more_debug' => true,        // 是否启用进阶调试
         'clear_debug' => false        // 是否提炼最新调试信息(避免调试输出受HTML标签影响)
     );
-
-    // 其他配置项可以根据需要添加
-
+    
+    // 数据库路由配置
+    $config['DB_router'] = array(
+        'enable' => true,           // 是否启用数据库路由
+        'table' => 'router',        // 数据库路由表名
+    );
+    
+    // 默认路由配置(优先级更高)
     add_Page('/', 'index.php');
     add_Page('/example', 'bramus-example.php');
     add_Page('/test', 'test.php');
     add_Page('/error', 'router.php');
+
+
+    // 其他配置项可以根据需要添加
 }

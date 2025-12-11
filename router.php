@@ -2,15 +2,38 @@
 include_once __DIR__ . '/include/_PRE.php';
 include_once __DIR__ . '/libs/Bramus/Router/Router.php';
 include_once __DIR__ . '/config/config.php';
+include_once __DIR__ . '/include/debug.php';
 
 global $router;
 if (!isset($router)) {
     $router = new \Bramus\Router\Router();
 
+    // 自定义路由(声明方法遵循Bramus Router)
+    // 例如：$router->get('/example', function () { include __DIR__ . '/bramus-example.php'; });
+    $router->all('/hello', function () {
+        echo 'Hello World!';
+    });
+
+
+
+
+
+
+    // 自动装载配置文件及数据库中的路由
     foreach ($config['router_Page'] as $key => $value) {
         // 查看文件是否存在
         if (!file_exists(__DIR__ . '/' . $value['file'])) {
-            Error_501('目标文件不存在：' . $value['file']);
+            if ($config['debug']['use_debug']) {
+                $router->all($key, function () use ($value) {
+                    Error_501('目标文件不存在：' . $value['file']);
+                });
+                echo '警告 注册路由时目标文件不存在：' . $value['file'] . '';
+                continue;
+            }
+            $router->all($key, function () {
+                Error_501('目标文件不存在');
+            });
+            continue;
         }
 
         // 根据请求方法注册路由
@@ -39,13 +62,62 @@ if (!isset($router)) {
                 break;
         }
     }
+    // 装载数据库中的路由
+    if ($config['DB_router']['enable']) {
+        include __DIR__ . '/include/conn.php';
+        global $conn;
+        $sql = "SELECT * FROM sys_routes WHERE is_enable = 1";
+        $result = $conn->query($sql);
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                // 查看文件是否存在
+                if (!file_exists(__DIR__ . '/' . $row['file_path'])) {
+                    if ($config['debug']['use_debug']) {
+                        $router->all($row['url'], function () use ($config, $row) {
+                            Error_501('目标文件不存在：' . $row['file_path']);
+                        });
+                        echo '警告 注册路由时目标文件不存在：' . $row['file_path'] . '';
+                        continue;
+                    }
+                    $router->all($row['url'], function () {
+                        Error_501('目标文件不存在');
+                    });
+                    continue;
+                }
+                $method = strtoupper($row['method']);
+                switch ($method) {
+                    case 'GET':
+                        $router->get($row['url'], function () use ($config, $row) {
+                            $params = func_get_args();
+                            $_GET['URL'] = $params;
+                            include __DIR__ . '/' . $row['file_path'];
+                        });
+                        break;
+                    case 'POST':
+                        $router->post($row['url'], function () use ($config, $row) {
+                            $params = func_get_args();
+                            $_GET['URL'] = $params;
+                            include __DIR__ . '/' . $row['file_path'];
+                        });
+                        break;
+                    default:
+                        $router->all($row['url'], function () use ($config, $row) {
+                            $params = func_get_args();
+                            $_GET['URL'] = $params;
+                            include __DIR__ . '/' . $row['file_path'];
+                        });
+                        break;
+                }
+            }
+        }
+    }
 
+    // 404路由(未匹配到任何路由时触发)
     $router->set404(function () {
         Error_404();
     });
 
     $router->run();
-}
-else {
+} else {
     Error_404();
 }
