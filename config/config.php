@@ -43,9 +43,8 @@ if (!isset($config["loaded"])) {
         'table' => 'router',        // 数据库路由表名
     );
     
-    // 默认路由配置(优先级更高)
+    // 默认路由配置(优先级最低)
     add_Page('/', 'index.php');
-    add_Page('/example', 'bramus-example.php');
     add_Page('/test', 'test.php');
     add_Page('/error', 'router.php');
 

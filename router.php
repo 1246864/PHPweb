@@ -2,25 +2,16 @@
 include_once __DIR__ . '/include/_PRE.php';
 include_once __DIR__ . '/libs/Bramus/Router/Router.php';
 include_once __DIR__ . '/config/config.php';
+include_once __DIR__ . '/config/.auto_router_config.php';
 include_once __DIR__ . '/include/debug.php';
 
 global $router;
 if (!isset($router)) {
     $router = new \Bramus\Router\Router();
 
-    // 自定义路由(声明方法遵循Bramus Router)
-    // 例如：$router->get('/example', function () { include __DIR__ . '/bramus-example.php'; });
-    $router->all('/hello', function () {
-        echo 'Hello World!';
-    });
-
-
-
-
-
 
     // 自动装载配置文件及数据库中的路由
-    foreach ($config['router_Page'] as $key => $value) {
+    foreach ($config['router_Page'] + $config['auto_router_Page'] as $key => $value) {
         // 查看文件是否存在
         if (!file_exists(__DIR__ . '/' . $value['file'])) {
             if ($config['debug']['use_debug']) {
@@ -111,6 +102,10 @@ if (!isset($router)) {
             }
         }
     }
+
+    // 装载自定义路由配置文件
+    $open_self_router = true;
+    include __DIR__ . '/config/router.php';
 
     // 404路由(未匹配到任何路由时触发)
     $router->set404(function () {
