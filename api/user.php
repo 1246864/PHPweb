@@ -18,6 +18,23 @@ if (!isset($_SESSION['user'])) {
     );
 }
 
+class User
+{
+    public $id;
+    public $username;
+    public $email;
+    public $role;
+    public $image;
+    public function __construct($id, $username, $email, $role, $image)
+    {
+        $this->id = $id;
+        $this->username = $username;
+        $this->email = $email;
+        $this->role = $role;
+        $this->image = $image;
+    }
+}
+
 /**
  * 用户登录，在代码里调用
  * @param string $username 用户输入的用户名
@@ -26,7 +43,7 @@ if (!isset($_SESSION['user'])) {
  */
 function login($username, $password)    // 简便api
 {
-    return user_login($username, $password);  
+    return User_login($username, $password);
 }
 /**
  * 用户注册，在代码里调用
@@ -38,7 +55,7 @@ function login($username, $password)    // 简便api
  */
 function register($username, $password, $email) // 简便api
 {
-    return user_register($username, $password, $email);
+    return User_register($username, $password, $email);
 }
 
 
@@ -46,9 +63,9 @@ function register($username, $password, $email) // 简便api
  * 用户登录，在代码里调用
  * @param string $username 用户输入的用户名
  * @param string $password 用户输入的明文密码
- * @return bool 登录成功返回true，否则false
+ * @return bool|User 登录成功返回用户对象，否则false
  */
-function user_login($username, $password)
+function User_login($username, $password)
 {
     global $conn;
     // 检查数据库连接是否有效
@@ -76,7 +93,7 @@ function user_login($username, $password)
         }
     }
     $DB_password = $row['password'];
-    echo '$DB_password:'.$DB_password.'<br/>';
+    echo '$DB_password:' . $DB_password . '<br/>';
 
     $flag = verifyPassword($password, $DB_password);
 
@@ -87,7 +104,7 @@ function user_login($username, $password)
             'flag' => $row['role'],
         );
         $stmt->close();
-        return true;
+        $USER = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
     }
     $stmt->close();
     return false;
@@ -99,32 +116,33 @@ function user_login($username, $password)
  * @param string $password 用户输入的密码
  * @param string $email 用户输入的邮箱
  * 
- * @return bool 注册成功返回true，否则false
+ * @return bool|User 注册成功返回用户对象，否则false
  */
-function user_register($username, $password, $email)
+function User_register($username, $password, $email)
 {
     global $conn;
-    if (user_check_name($username)) {
+    if (User_check_name($username)) {
         return false;
     }
-    if (user_check_email($email)) {
+    if (User_check_email($email)) {
         return false;
     }
-    
+
     $conn->set_charset("utf8");
     $username = $conn->real_escape_string($username);
     $password = $conn->real_escape_string($password);
     $email = $conn->real_escape_string($email);
 
     $hash_password = encryptPassword($password);
-    
+
     echo "$username, $hash_password, $email";
 
     // 3. 拼接SQL并执行（绕过预处理绑定）
     $sql = "INSERT INTO `user`(`username`, `password`, `email`) 
             VALUES ('$username', '$hash_password', '$email')";
     $flag = $conn->query($sql);
-    return $flag?1:0;
+
+    return $flag ? new User($conn->insert_id, $username, $email, 'user', '') : false; // 注册成功返回用户对象
 }
 
 /**
@@ -132,7 +150,8 @@ function user_register($username, $password, $email)
  * @param string $username 用户名
  * @return bool 用户名存在返回true，否则false
  */
-function user_check_name($username){
+function User_check_name($username)
+{
     global $conn;
     $username = $conn->real_escape_string($username);
     $sql = "SELECT * FROM `user` WHERE `username` = '$username'";
@@ -145,7 +164,8 @@ function user_check_name($username){
  * @param string $email 邮箱
  * @return bool 邮箱存在返回true，否则false
  */
-function user_check_email($email){
+function User_check_email($email)
+{
     global $conn;
     $email = $conn->real_escape_string($email);
     $sql = "SELECT * FROM `user` WHERE `email` = '$email'";
@@ -153,7 +173,131 @@ function user_check_email($email){
     return $flag->num_rows > 0;
 }
 
+/**
+ * 获取用户信息
+ * @param string $key 用户名或邮箱或idid
+ * @return bool|User 用户信息对象（包含用户名、密码哈希、邮箱等）
+ */
+function User_get_user($key)
+{
+    global $conn;
+    $key = $conn->real_escape_string($key);
+    $sql = "SELECT * FROM `user` WHERE `username` = '$key' OR `email` = '$key' OR `id` = '$key'";
+    $flag = $conn->query($sql);
+    $row = $flag->fetch_assoc();
+    if (!$row) {
+        return false;
+    }
+    $user = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
+    return $user;
+}
 
+/**
+ * 修改用户名
+ * @param User $user 用户对象
+ * @param string $new_username 新用户名
+ * @return bool|User 修改成功返回新用户对象，否则false
+ */
+function User_change_name($user, $new_username)
+{
+    global $conn;
+    $id = $conn->real_escape_string($user->id);
+    $new_username = $conn->real_escape_string($new_username);
+    if (User_check_name($new_username)) {
+        return false;
+    } else {
+        $sql = "UPDATE `user` SET `username` = '$new_username' WHERE `id` = '$id'";
+        $flag = $conn->query($sql);
+        if ($flag) {
+            $user = new User($user->id, $new_username, $user->email, $user->role, $user->image);
+            return $user;
+        } else {
+            return false;
+        }
+    }
+}
+
+/**
+ * 修改邮箱
+ * @param User $user 用户对象
+ * @param string $new_email 新邮箱
+ * @return bool|User 修改成功返回新用户对象，否则false
+ */
+function User_change_email($user, $new_email)
+{
+    global $conn;
+    $id = $conn->real_escape_string($user->id);
+    $new_email = $conn->real_escape_string($new_email);
+    if (User_check_email($new_email)) {
+        return false;
+    } else {
+        $sql = "UPDATE `user` SET `email` = '$new_email' WHERE `id` = '$id'";
+        $flag = $conn->query($sql);
+        if ($flag) {
+            $user = new User($user->id, $user->username, $new_email, $user->role, $user->image);
+            return $user;
+        } else {
+            return false;
+        }
+    }
+}
+
+/**
+ * 将用户权限修改为用户
+ * @param User $user 用户对象
+ * @return bool|User 修改成功返回新用户对象，否则false
+ */
+function User_to_user($user)
+{
+    global $conn;
+    $id = $conn->real_escape_string($user->id);
+    $sql = "UPDATE `user` SET `role` = 'user' WHERE `id` = '$id'";
+    $flag = $conn->query($sql);
+    if ($flag) {
+        $user = new User($user->id, $user->username, $user->email, 'user', $user->image);
+        return $user;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * 将用户权限修改为作者
+ * @param User $user 用户对象
+ * @return bool|User 修改成功返回新用户对象，否则false
+ */
+function User_to_writer($user)
+{
+    global $conn;
+    $id = $conn->real_escape_string($user->id);
+    $sql = "UPDATE `user` SET `role` = 'writer' WHERE `id` = '$id'";
+    $flag = $conn->query($sql);
+    if ($flag) {
+        $user = new User($user->id, $user->username, $user->email, 'writer', $user->image);
+        return $user;
+    } else {
+        return false;
+    }
+}
+
+/**
+ * 将用户权限修改为管理员
+ * @param User $user 用户对象
+ * @return bool|User 修改成功返回新用户对象，否则false
+ */
+function User_to_admin($user)
+{
+    global $conn;
+    $id = $conn->real_escape_string($user->id);
+    $sql = "UPDATE `user` SET `role` = 'admin' WHERE `id` = '$id'";
+    $flag = $conn->query($sql);
+    if ($flag) {
+        $user = new User($user->id, $user->username, $user->email, 'admin', $user->image);
+        return $user;
+    } else {
+        return false;
+    }
+}
 
 /**
  * 生成密码哈希（兼容 PHP 5.3+，无任何扩展依赖）
@@ -177,7 +321,7 @@ function encryptPassword($password)
         // 2. 兼容 PHP < 5.5：纯原生实现 bcrypt 哈希（无任何扩展依赖）
         $cost = 12;
         $saltPrefix = '$2a$' . str_pad($cost, 2, '0', STR_PAD_LEFT) . '$';
-        
+
         // 纯原生生成安全随机盐值（仅用 PHP 内置函数，无扩展依赖）
         $randomStr = '';
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./'; // bcrypt允许的字符集
@@ -190,10 +334,10 @@ function encryptPassword($password)
             $randomStr .= $chars[mt_rand(0, $charsLen - 1)];
         }
         $salt = $saltPrefix . $randomStr;
-        
+
         // 生成 crypt 哈希（bcrypt 算法）
         $hash = crypt($password, $salt);
-        
+
         // 验证哈希生成是否有效（bcrypt 哈希长度固定为 60 位）
         if (strlen($hash) !== 60) {
             $hash = false;
@@ -204,7 +348,7 @@ function encryptPassword($password)
     if ($hash === false || empty($hash)) {
         throw new RuntimeException('密码哈希生成失败');
     }
-    
+
     return $hash;
 }
 

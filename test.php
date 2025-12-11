@@ -1,6 +1,6 @@
 <?php
 include_once __DIR__ . '/include/header.php';
-include_once __DIR__ . '/function/user.php';
+include_once __DIR__ . '/api/user.php';
 
 ?>
 <!DOCTYPE html>
@@ -15,8 +15,13 @@ include_once __DIR__ . '/function/user.php';
 <body>
     <h1>aaaaa</h1>
     <?php
-        echo "___1_".user_register('j2yz', 'zyj123', '1278633').'<br/>';
-        echo "___2_".login('j2yz', 'zyj123').'<br/>';
+        $user = User_get_user('jyz2');
+        if ($user) {
+            print_r($user);
+            $user = User_to_writer($user);
+            echo '<br> 更改后的权限：' . $user->role.'<br>';
+            print_r($user);
+        }
     ?>    
 </body>
 
