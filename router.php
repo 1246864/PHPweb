@@ -107,6 +107,21 @@ if (!isset($router)) {
     $open_self_router = true;
     include __DIR__ . '/config/router.php';
 
+    // 装载预定义路由
+
+    $router->all('/admin/auto_router', function () {
+        include_once __DIR__ . '/admin/auto_router.php';
+    });
+
+    $router->all('/api/user/check_name/(.*)', function ($username) {
+        include_once __DIR__ . '/api/user.php';
+        echo User_check_name($username) ? 'true' : 'false';
+    });
+    $router->all('/api/user/check_email/(.*)', function ($email) {
+        include_once __DIR__ . '/api/user.php';
+        echo User_check_email($email) ? 'true' : 'false';
+    });
+
     // 404路由(未匹配到任何路由时触发)
     $router->set404(function () {
         Error_404();

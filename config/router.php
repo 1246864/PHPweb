@@ -2,6 +2,9 @@
 include_once __DIR__ . '/../include/_PRE.php';
 // 自定义路由配置文件
 
+// 包含用户API路由
+include_once __DIR__ . '/../api/user.php';
+
 if (isset($open_self_router) && $open_self_router) {
     $open_self_router = false;
     global $router;
@@ -14,13 +17,10 @@ if (isset($open_self_router) && $open_self_router) {
     // 你可以自行在这添加其他路由(优先级最高)
     // ↓↓↓↓↓↓
 
-    $router->all('/admin/auto_router', function () {
-        include_once __DIR__ . '/../admin/auto_router.php';
-    });
 
 
 
-}
-else {
+
+} else {
     Error_404();
 }

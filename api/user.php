@@ -1,11 +1,15 @@
 <?php
 // 用户相关函数库
 
+// 注意, 此文件要求要运行在PHP5.3+，无任何扩展依赖
+
 // 引入预处理库
 include_once __DIR__ . '/../include/_PRE.php';
 
 include_once __DIR__ . '/../include/conn.php';
 include_once __DIR__ . '/function.php';
+// 引入路由库
+include_once __DIR__ . '/../libs/Bramus/Router/Router.php';
 
 session_start();
 
@@ -41,9 +45,9 @@ class User
  * @param string $password 用户输入的明文密码
  * @return bool 登录成功返回true，否则false
  */
-function login($username, $password)    // 简便api
+function login($username, $password, $cookie = false)    // 简便api
 {
-    return User_login($username, $password);
+    return User_login($username, $password, $cookie);
 }
 /**
  * 用户注册，在代码里调用
@@ -57,6 +61,14 @@ function register($username, $password, $email) // 简便api
 {
     return User_register($username, $password, $email);
 }
+/**
+ * 用户注销，在代码里调用
+ * @return bool 注销成功返回true，否则false
+ */
+function logout() // 简便api
+{
+    return User_logout();
+}
 
 
 /**
@@ -65,7 +77,7 @@ function register($username, $password, $email) // 简便api
  * @param string $password 用户输入的明文密码
  * @return bool|User 登录成功返回用户对象，否则false
  */
-function User_login($username, $password)
+function User_login($username, $password, $cookie = false)
 {
     global $conn;
     // 检查数据库连接是否有效
@@ -93,7 +105,6 @@ function User_login($username, $password)
         }
     }
     $DB_password = $row['password'];
-    echo '$DB_password:' . $DB_password . '<br/>';
 
     $flag = verifyPassword($password, $DB_password);
 
@@ -104,12 +115,52 @@ function User_login($username, $password)
             'flag' => $row['role'],
         );
         $stmt->close();
-        $USER = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
+
+        if ($cookie) {
+            $day7 = 7 * 24 * 60 * 60;
+            setcookie('login_user', $row['username'], time() + $day7, '/');
+            setcookie('login_password', $password, time() + $day7, '/');
+        }
+
+        return new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
     }
     $stmt->close();
     return false;
 }
 
+/**
+ * 自动登录，在代码里调用
+ * @return bool|User 登录成功返回用户对象，否则false
+ */
+function User_auto_login()
+{
+    if (isset($_COOKIE['login_user']) && isset($_COOKIE['login_password'])) {
+        $username = $_COOKIE['login_user'];
+        $password = $_COOKIE['login_password'];
+        return User_login($username, $password, true);
+    }
+    return false;
+}
+
+/**
+ * 用户注销，在代码里调用
+ * @return bool 注销成功返回true，否则false
+ */
+function User_logout()
+{
+    try {
+        $_SESSION['user'] = array(
+            'is_login' => false,
+            'name' => '游客',
+            'flag' => 'user',
+        );
+        setcookie('login_user', '', time() - 1, '/');
+        setcookie('login_password', '', time() - 1, '/');
+        return true;
+    } catch (\Throwable $th) {
+        return false;
+    }
+}
 /**
  * 用户注册，在代码里调用
  * @param string $username 用户输入的用户名
@@ -141,12 +192,15 @@ function User_register($username, $password, $email)
     $sql = "INSERT INTO `user`(`username`, `password`, `email`) 
             VALUES ('$username', '$hash_password', '$email')";
     $flag = $conn->query($sql);
-
-    return $flag ? new User($conn->insert_id, $username, $email, 'user', '') : false; // 注册成功返回用户对象
+    if ($flag) {
+        return new User($conn->insert_id, $username, $email, 'user', ''); // 注册成功返回用户对象
+    } else {
+        return false;
+    }
 }
 
 /**
- * 检查用户名是否存在
+ * 检查用户名是否存在，在代码里调用或异步调用
  * @param string $username 用户名
  * @return bool 用户名存在返回true，否则false
  */
@@ -300,6 +354,29 @@ function User_to_admin($user)
 }
 
 /**
+ * 获取所有用户信息
+ * @param User $user 当前用户对象
+ * @return bool|array<User> 用户信息对象数组（包含用户名、密码哈希、邮箱等）
+ */
+function User_get_users($user)
+{
+    global $conn;
+    $id = $conn->real_escape_string($user->id);
+    $sql = "SELECT * FROM `user` WHERE `id` != '$id'";
+    $flag = $conn->query($sql);
+    $rows = $flag->fetch_all(MYSQLI_ASSOC);
+    if (!$rows) {
+        return false;
+    }
+    $users = [];
+    foreach ($rows as $row) {
+        $users[] = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
+    }
+    return $users;
+}
+
+// 以下为辅助函数，用于密码验证（兼容 PHP 5.3+，无任何扩展依赖）-------------------------------------------
+/**
  * 生成密码哈希（兼容 PHP 5.3+，无任何扩展依赖）
  * @param string $password 明文密码
  * @return string 加密后的哈希字符串
@@ -385,3 +462,4 @@ function verifyPassword($plainPassword, $storedHash)
         return $result === 0;
     }
 }
+

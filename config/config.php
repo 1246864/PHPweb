@@ -45,9 +45,9 @@ if (!isset($config["loaded"])) {
     
     // 默认路由配置(优先级最低)
     add_Page('/', 'index.php');
-    add_Page('/test', 'test.php');
+    add_Page('/test', 'test/test.php');
     add_Page('/error', 'router.php');
-
+    add_Page('/test/api','test/test_api.php');
 
     // 其他配置项可以根据需要添加
 }

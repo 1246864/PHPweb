@@ -32,6 +32,7 @@ include_once __DIR__ . '/../config/config.php';
     <h1>404 服务器错误</h1>
     <p>您请求的页面不存在。</p>
     <p>请检查您输入的 URL 是否正确。</p>
+    <p>你输入的 URL 为：<?php echo $_SERVER['REQUEST_URI']; ?></p>
     <a href="<?php echo $config['site']['url']; ?>">返回首页</a>
 </body>
 </html>
