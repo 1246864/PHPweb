@@ -110,6 +110,7 @@ if (!isset($router)) {
     }
 
     // 装载自定义路由配置文件
+    global $open_self_router;
     $open_self_router = true;
     include __DIR__ . '/config/router.php';
 

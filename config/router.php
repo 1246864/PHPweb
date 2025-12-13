@@ -2,9 +2,8 @@
 include_once __DIR__ . '/../include/_PRE.php';
 // 自定义路由配置文件
 
-// 包含用户API路由
-include_once __DIR__ . '/../api/user.php';
 
+global $open_self_router;
 if (isset($open_self_router) && $open_self_router) {
     $open_self_router = false;
     global $router;
@@ -45,11 +44,11 @@ if (isset($open_self_router) && $open_self_router) {
 
     // user 相关路由
     $router->all('/api/user/check_name/(.*)', function ($username) {
-        include_once __DIR__ . '/api/user.php';
+        include_once __DIR__ . '/../libs/function/user.php';
         echo User_check_name($username) ? 'true' : 'false';
     });
     $router->all('/api/user/check_email/(.*)', function ($email) {
-        include_once __DIR__ . '/api/user.php';
+        include_once __DIR__ . '/../libs/function/user.php';
         echo User_check_email($email) ? 'true' : 'false';
     });
 } else {

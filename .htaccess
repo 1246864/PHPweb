@@ -3,8 +3,8 @@
 RewriteEngine On
 # 若请求URI为/PHPweb/或/PHPweb（末尾可选斜杠）
 RewriteCond %{REQUEST_URI} ^/PHPweb/?$
-# 将匹配到的请求全部重写到router.php，并停止后续规则    
-RewriteRule ^(.*)$ router.php [L]
+# 将匹配到的请求全部重写到.main_router.php，并停止后续规则    
+RewriteRule ^(.*)$ .main_router.php [L]
 
 
 <IfModule mod_rewrite.c>
@@ -15,6 +15,6 @@ RewriteRule ^(.*)$ router.php [L]
     RewriteCond %{REQUEST_FILENAME} !-f
 # 如果请求的目录也不存在
     RewriteCond %{REQUEST_FILENAME} !-d
-# 将所有请求重写到 index.php，并标记为最后一条规则
-    RewriteRule ^ router.php [L]
+# 将所有请求重写到 .main_router.php，并标记为最后一条规则
+    RewriteRule ^ .main_router.php [L]
 </IfModule>

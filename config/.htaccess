@@ -5,4 +5,4 @@ RewriteCond %{REQUEST_FILENAME} -d
 
 # 规则：将所有直接访问请求转发到 page_error/404.php（相对路径，基于当前文件夹）
 # [L] 表示“最后一条规则”，停止后续匹配；[NC] 表示“不区分大小写”
-RewriteRule ^(.*)$ ../page_error/404.php [L,NC]
+RewriteRule ^(.*)$ ../libs/page_error/404.php [L,NC]

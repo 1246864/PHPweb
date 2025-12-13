@@ -22,7 +22,7 @@ if (!isset($x__RPE_OK)) {
         // 设置 HTTP 状态码为 500
         http_response_code(500);
         // 转发到 500 错误页面, 并传递错误信息
-        include_once __DIR__ . '/../page_error/500.php';
+        include_once __DIR__ . '/../libs/page_error/500.php';
         exit();
     }
 
@@ -34,7 +34,7 @@ if (!isset($x__RPE_OK)) {
         // 设置 HTTP 状态码为 404
         http_response_code(404);
         // 转发到 404 错误页面
-        include_once __DIR__ . '/../page_error/404.php';
+        include_once __DIR__ . '/../libs/page_error/404.php';
         exit();
     }
 
@@ -46,7 +46,7 @@ if (!isset($x__RPE_OK)) {
         // 设置 HTTP 状态码为 501
         http_response_code(501);
         // 转发到 501 错误页面, 并传递错误信息
-        include_once __DIR__ . '/../page_error/501.php';
+        include_once __DIR__ . '/../libs/page_error/501.php';
         exit();
     }
 
