@@ -1,3 +1,4 @@
+<!-- URL {/test/user/1} -->
 <?php
 // 测试脚本 - 测试 api/user.php 中的所有方法
 // 设置UTF-8编码
@@ -6,7 +7,7 @@ header('Content-Type: text/html; charset=utf-8');
 // 初始化测试环境
 ob_start();
 
-include_once __DIR__ . '/api/user.php';
+include_once __DIR__ . '/../../../api/user.php';
 
 // 初始化测试环境
 echo "<h1>PHPweb User API 测试脚本</h1>";

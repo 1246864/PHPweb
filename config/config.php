@@ -42,12 +42,14 @@ if (!isset($config["loaded"])) {
         'enable' => true,           // 是否启用数据库路由
         'table' => 'router',        // 数据库路由表名
     );
+
+    $config['auto_router'] = array(
+        'enable' => true,           // 是否在用户每次访问时都运行自动路由查找(生产环境建议关闭)
+    );
     
     // 默认路由配置(优先级最低)
     add_Page('/', 'index.php');
-    add_Page('/test', 'test/test.php');
     add_Page('/error', 'router.php');
-    add_Page('/test/api','test/test_api.php');
 
     // 其他配置项可以根据需要添加
 }

@@ -198,7 +198,19 @@ function User_register($username, $password, $email)
         return false;
     }
 }
-
+/**
+ * 删除用户，在代码里调用
+ * @param User $user 用户对象
+ * @return bool 删除成功返回true，否则false
+ */
+function User_del_user($user)
+{
+    global $conn;
+    $user_id = $conn->real_escape_string($user->id);
+    $sql = "DELETE FROM `user` WHERE `id` = '$user_id'";
+    $flag = $conn->query($sql);
+    return $flag;
+}
 /**
  * 检查用户名是否存在，在代码里调用或异步调用
  * @param string $username 用户名

@@ -1,5 +1,5 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
+// header('Content-Type: application/json; charset=utf-8');
 
 // -------------------------- 配置区（根据你的项目调整） --------------------------
 $SCAN_DIR = __DIR__ . '/../pages'; // 页面文件存放目录
@@ -47,7 +47,8 @@ function scanFiles($dir, &$scannedRoutes, $excludeExt) {
         $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
         if (in_array($ext, $excludeExt)) continue;
         // 读取首行内容
-        $firstLine = trim(file_get_contents($fullPath, false, null, 0, 500));
+        $firstLine = (file($fullPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)[0]);
+        $firstLine = isset($firstLine)?trim($firstLine):'';
         if (strpos($firstLine, '<!-- URL ') !== 0) continue;
         // 解析URL标记
         preg_match_all('/\{([^}]+)\}/', $firstLine, $matches);
@@ -107,9 +108,11 @@ foreach ($validRoutes as $route) {
 }
 file_put_contents($AUTO_CONFIG_FILE, $configContent);
 
-// 5. 返回JSON结果
-exit(json_encode([
-    'code' => 0,
-    'msg' => '扫描完成',
-    'data' => $result
-], JSON_UNESCAPED_UNICODE));
+global $__auto_router_result;
+$__auto_router_result = $result;
+// // 5. 返回JSON结果
+// exit(json_encode([
+//     'code' => 0,
+//     'msg' => '扫描完成',
+//     'data' => $result
+// ], JSON_UNESCAPED_UNICODE));
