@@ -7,7 +7,7 @@ header('Content-Type: text/html; charset=utf-8');
 // 初始化测试环境
 ob_start();
 
-include_once __DIR__ . '/../../headers/user.php';
+include_once __DIR__ . '/../headers/user.php';
 
 // 初始化测试环境
 echo "<h1>PHPweb User API 测试脚本</h1>";
@@ -87,8 +87,8 @@ echo "<h2>5. 测试修改用户信息</h2>";
 if ($user_info) {
     // 测试修改用户名
     $new_username = "test_user_new_" . time();
-    $change_name_result = User_change_name($user_info, $new_username);
-    echo "<p><strong>User_change_name() 测试:</strong> " . ($change_name_result ? "成功" : "失败") . "</p>";
+    $change_name_result = User_set_name($user_info, $new_username);
+    echo "<p><strong>User_set_name() 测试:</strong> " . ($change_name_result ? "成功" : "失败") . "</p>";
     if ($change_name_result) {
         echo "<p>用户名已修改为: " . $change_name_result->username . "</p>";
         // 更新用户信息变量
@@ -99,8 +99,8 @@ if ($user_info) {
     
     // 测试修改邮箱
     $new_email = "test_new_" . time() . "@example.com";
-    $change_email_result = User_change_email($user_info, $new_email);
-    echo "<p><strong>User_change_email() 测试:</strong> " . ($change_email_result ? "成功" : "失败") . "</p>";
+    $change_email_result = User_set_email($user_info, $new_email);
+    echo "<p><strong>User_set_email() 测试:</strong> " . ($change_email_result ? "成功" : "失败") . "</p>";
     if ($change_email_result) {
         echo "<p>邮箱已修改为: " . $change_email_result->email . "</p>";
         // 更新用户信息变量
@@ -143,7 +143,7 @@ echo "<hr>";
 echo "<h2>7. 测试获取所有用户</h2>";
 
 if ($user_info) {
-    $all_users = User_get_users($user_info);
+    $all_users = User_get_users();
     echo "<p><strong>User_get_users() 测试:</strong> " . ($all_users ? "成功" : "失败") . "</p>";
     if ($all_users) {
         echo "<p>共获取到 " . count($all_users) . " 个用户</p>";

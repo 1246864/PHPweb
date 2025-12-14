@@ -1,15 +1,19 @@
 <?php
 // 用户相关函数库
 
-// 注意, 此文件要求要运行在PHP5.3+，无任何扩展依赖
+// 对应数据表名：user
+// 字段：id, username, password, role, email, image
 
 // 引入预处理库
 include_once __DIR__ . '/../../include/_PRE.php';
 
+include_once __DIR__ . '/../../config/config.php';
 include_once __DIR__ . '/../../include/conn.php';
 include_once __DIR__ . '/function.php';
-// 引入路由库
-include_once __DIR__ . '/../../libs/Bramus/Router/Router.php';
+
+// 引入User类
+include_once __DIR__ . '/class/User.php';
+
 
 session_start();
 
@@ -19,25 +23,11 @@ if (!isset($_SESSION['user'])) {
         'is_login' => false,
         'name' => '游客',
         'flag' => 'user',
+        'id' => 0,
     );
 }
 
-class User
-{
-    public $id;
-    public $username;
-    public $email;
-    public $role;
-    public $image;
-    public function __construct($id, $username, $email, $role, $image)
-    {
-        $this->id = $id;
-        $this->username = $username;
-        $this->email = $email;
-        $this->role = $role;
-        $this->image = $image;
-    }
-}
+
 
 
 /**
@@ -48,53 +38,57 @@ class User
  */
 function User_login($username, $password, $cookie = false)
 {
-    global $conn;
-    // 检查数据库连接是否有效
-    if (!$conn || !is_object($conn)) {
-        Error_500('数据库连接失败，无法执行登录操作。');
-        return false;
-    }
+    global $conn, $config;
 
-    // 使用预处理语句防止SQL注入
-    $stmt = $conn->prepare("SELECT * from user where username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $rs = $stmt->get_result();
-    $row = $rs->fetch_assoc();
+    try {
 
-    if (!$row) {
-        $stmt = $conn->prepare("SELECT * from user where email = ?");
+        // 使用预处理语句防止SQL注入
+        $stmt = $conn->prepare("SELECT * from user where username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $rs = $stmt->get_result();
         $row = $rs->fetch_assoc();
 
         if (!$row) {
-            $row['password'] = '';
+            $stmt = $conn->prepare("SELECT * from user where email = ?");
+            $stmt->bind_param("s", $username);
+            $stmt->execute();
+            $rs = $stmt->get_result();
+            $row = $rs->fetch_assoc();
+
+            if (!$row) {
+                $row['password'] = '';
+            }
         }
-    }
-    $DB_password = $row['password'];
+        $DB_password = $row['password'];
 
-    $flag = verifyPassword($password, $DB_password);
+        $flag = verifyPassword($password, $DB_password);
 
-    if ($flag) {
-        $_SESSION['user'] = array(
-            'is_login' => true,
-            'name' => $row['username'],
-            'flag' => $row['role'],
-        );
+        if ($flag) {
+            $_SESSION['user'] = array(
+                'is_login' => true,
+                'name' => $row['username'],
+                'flag' => $row['role'],
+                'id' => $row['id'],
+            );
+            $stmt->close();
+
+            if ($cookie) {
+                $day7 = 7 * 24 * 60 * 60;
+                setcookie('login_user', $row['username'], time() + $day7, '/');
+                setcookie('login_password', $password, time() + $day7, '/');
+            }
+
+            return new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
+        }
         $stmt->close();
-
-        if ($cookie) {
-            $day7 = 7 * 24 * 60 * 60;
-            setcookie('login_user', $row['username'], time() + $day7, '/');
-            setcookie('login_password', $password, time() + $day7, '/');
+        return false;
+    } catch (\Throwable $e) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_login/login) ' . $e->getMessage();
         }
-
-        return new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
+        return false;
     }
-    $stmt->close();
-    return false;
 }
 
 /**
@@ -103,12 +97,20 @@ function User_login($username, $password, $cookie = false)
  */
 function User_auto_login()
 {
-    if (isset($_COOKIE['login_user']) && isset($_COOKIE['login_password'])) {
-        $username = $_COOKIE['login_user'];
-        $password = $_COOKIE['login_password'];
-        return User_login($username, $password, true);
+    global $config;
+    try {
+        if (isset($_COOKIE['login_user']) && isset($_COOKIE['login_password'])) {
+            $username = $_COOKIE['login_user'];
+            $password = $_COOKIE['login_password'];
+            return User_login($username, $password, true);
+        }
+        return false;
+    } catch (\Throwable $e) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_auto_login) ' . $e->getMessage();
+        }
+        return false;
     }
-    return false;
 }
 
 /**
@@ -117,16 +119,21 @@ function User_auto_login()
  */
 function User_logout()
 {
+    global $config;
     try {
         $_SESSION['user'] = array(
             'is_login' => false,
             'name' => '游客',
             'flag' => 'user',
+            'id' => 0,
         );
         setcookie('login_user', '', time() - 1, '/');
         setcookie('login_password', '', time() - 1, '/');
         return true;
     } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_logout) ' . $th->getMessage();
+        }
         return false;
     }
 }
@@ -140,30 +147,38 @@ function User_logout()
  */
 function User_register($username, $password, $email)
 {
-    global $conn;
-    if (User_check_name($username)) {
-        return false;
-    }
-    if (User_check_email($email)) {
-        return false;
-    }
 
-    $conn->set_charset("utf8");
-    $username = $conn->real_escape_string($username);
-    $password = $conn->real_escape_string($password);
-    $email = $conn->real_escape_string($email);
+    global $conn, $config;
+    try {
+        if (User_check_name($username)) {
+            return false;
+        }
+        if (User_check_email($email)) {
+            return false;
+        }
 
-    $hash_password = encryptPassword($password);
+        $conn->set_charset("utf8");
+        $username = $conn->real_escape_string($username);
+        $password = $conn->real_escape_string($password);
+        $email = $conn->real_escape_string($email);
 
-    echo "$username, $hash_password, $email";
+        $hash_password = encryptPassword($password);
 
-    // 3. 拼接SQL并执行（绕过预处理绑定）
-    $sql = "INSERT INTO `user`(`username`, `password`, `email`) 
+        echo "$username, $hash_password, $email";
+
+        // 3. 拼接SQL并执行（绕过预处理绑定）
+        $sql = "INSERT INTO `user`(`username`, `password`, `email`) 
             VALUES ('$username', '$hash_password', '$email')";
-    $flag = $conn->query($sql);
-    if ($flag) {
-        return new User($conn->insert_id, $username, $email, 'user', ''); // 注册成功返回用户对象
-    } else {
+        $flag = $conn->query($sql);
+        if ($flag) {
+            return new User($conn->insert_id, $username, $email, 'user', ''); // 注册成功返回用户对象
+        } else {
+            return false;
+        }
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_register) ' . $th->getMessage();
+        }
         return false;
     }
 }
@@ -174,11 +189,18 @@ function User_register($username, $password, $email)
  */
 function User_del_user($user)
 {
-    global $conn;
-    $user_id = $conn->real_escape_string($user->id);
-    $sql = "DELETE FROM `user` WHERE `id` = '$user_id'";
-    $flag = $conn->query($sql);
-    return $flag;
+    global $conn, $config;
+    try {
+        $user_id = $conn->real_escape_string($user->id);
+        $sql = "DELETE FROM `user` WHERE `id` = '$user_id'";
+        $flag = $conn->query($sql);
+        return $flag;
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_del_user) ' . $th->getMessage();
+        }
+        return false;
+    }
 }
 /**
  * 检查用户名是否存在，在代码里调用或异步调用
@@ -187,11 +209,18 @@ function User_del_user($user)
  */
 function User_check_name($username)
 {
-    global $conn;
-    $username = $conn->real_escape_string($username);
-    $sql = "SELECT * FROM `user` WHERE `username` = '$username'";
-    $flag = $conn->query($sql);
-    return $flag->num_rows > 0;
+    global $conn, $config;
+    try {
+        $username = $conn->real_escape_string($username);
+        $sql = "SELECT * FROM `user` WHERE `username` = '$username'";
+        $flag = $conn->query($sql);
+        return $flag->num_rows > 0;
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_check_name) ' . $th->getMessage();
+        }
+        return false;
+    }
 }
 
 /**
@@ -201,11 +230,18 @@ function User_check_name($username)
  */
 function User_check_email($email)
 {
-    global $conn;
-    $email = $conn->real_escape_string($email);
-    $sql = "SELECT * FROM `user` WHERE `email` = '$email'";
-    $flag = $conn->query($sql);
-    return $flag->num_rows > 0;
+    global $conn, $config;
+    try {
+        $email = $conn->real_escape_string($email);
+        $sql = "SELECT * FROM `user` WHERE `email` = '$email'";
+        $flag = $conn->query($sql);
+        return $flag->num_rows > 0;
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_check_email) ' . $th->getMessage();
+        }
+        return false;
+    }
 }
 
 /**
@@ -215,16 +251,23 @@ function User_check_email($email)
  */
 function User_get_user($key)
 {
-    global $conn;
-    $key = $conn->real_escape_string($key);
-    $sql = "SELECT * FROM `user` WHERE `username` = '$key' OR `email` = '$key' OR `id` = '$key'";
-    $flag = $conn->query($sql);
-    $row = $flag->fetch_assoc();
-    if (!$row) {
+    global $conn, $config;
+    try {
+        $key = $conn->real_escape_string($key);
+        $sql = "SELECT * FROM `user` WHERE `username` = '$key' OR `email` = '$key' OR `id` = '$key'";
+        $flag = $conn->query($sql);
+        $row = $flag->fetch_assoc();
+        if (!$row) {
+            return false;
+        }
+        $user = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
+        return $user;
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_get_user) ' . $th->getMessage();
+        }
         return false;
     }
-    $user = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
-    return $user;
 }
 
 /**
@@ -233,22 +276,20 @@ function User_get_user($key)
  * @param string $new_username 新用户名
  * @return bool|User 修改成功返回新用户对象，否则false
  */
-function User_change_name($user, $new_username)
+function User_set_name($user, $new_username)
 {
-    global $conn;
-    $id = $conn->real_escape_string($user->id);
-    $new_username = $conn->real_escape_string($new_username);
-    if (User_check_name($new_username)) {
-        return false;
-    } else {
-        $sql = "UPDATE `user` SET `username` = '$new_username' WHERE `id` = '$id'";
-        $flag = $conn->query($sql);
-        if ($flag) {
-            $user = new User($user->id, $new_username, $user->email, $user->role, $user->image);
-            return $user;
-        } else {
+    global $conn, $config;
+    try {
+        if (User_check_name($new_username)) {
             return false;
+        } else {
+            return $user->set_username($new_username);
         }
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_set_name) ' . $th->getMessage();
+        }
+        return false;
     }
 }
 
@@ -258,18 +299,20 @@ function User_change_name($user, $new_username)
  * @param string $new_password 新密码
  * @return bool|User 修改成功返回新用户对象，否则false
  */
-function User_change_password($user, $new_password)
+function User_set_password($user, $new_password)
 {
-    global $conn;
-    $id = $conn->real_escape_string($user->id);
-    $new_password = $conn->real_escape_string($new_password);
-    $hash_password = encryptPassword($new_password);
-    $sql = "UPDATE `user` SET `password` = '$hash_password' WHERE `id` = '$id'";
-    $flag = $conn->query($sql);
-    if ($flag) {
-        $user = new User($user->id, $user->username, $user->email, $user->role, $user->image);
-        return $user;
-    } else {
+    global $conn, $config;
+    try {
+        $id = $conn->real_escape_string($user->id);
+        $new_password = $conn->real_escape_string($new_password);
+        $hash_password = encryptPassword($new_password);
+        $sql = "UPDATE `user` SET `password` = '$hash_password' WHERE `id` = '$id'";
+        $flag = $conn->query($sql);
+        return $flag;
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_set_password) ' . $th->getMessage();
+        }
         return false;
     }
 }
@@ -280,22 +323,20 @@ function User_change_password($user, $new_password)
  * @param string $new_email 新邮箱
  * @return bool|User 修改成功返回新用户对象，否则false
  */
-function User_change_email($user, $new_email)
+function User_set_email($user, $new_email)
 {
-    global $conn;
-    $id = $conn->real_escape_string($user->id);
-    $new_email = $conn->real_escape_string($new_email);
-    if (User_check_email($new_email)) {
-        return false;
-    } else {
-        $sql = "UPDATE `user` SET `email` = '$new_email' WHERE `id` = '$id'";
-        $flag = $conn->query($sql);
-        if ($flag) {
-            $user = new User($user->id, $user->username, $new_email, $user->role, $user->image);
-            return $user;
-        } else {
+    global $conn, $config;
+    try {
+        if (User_check_email($new_email)) {
             return false;
+        } else {
+            return $user->set_email($new_email);
         }
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_set_email) ' . $th->getMessage();
+        }
+        return false;
     }
 }
 
@@ -306,7 +347,15 @@ function User_change_email($user, $new_email)
  */
 function User_get_name($user)
 {
-    return $user->username;
+    global $conn, $config;
+    try {
+        return $user->get_username();
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_get_name) ' . $th->getMessage();
+        }
+        return null;
+    }
 }
 /**
  * 获取邮箱
@@ -315,7 +364,15 @@ function User_get_name($user)
  */
 function User_get_email($user)
 {
-    return $user->email;
+    global $conn, $config;
+    try {
+        return $user->get_email();
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_get_email) ' . $th->getMessage();
+        }
+        return null;
+    }
 }
 /**
  * 获取用户角色
@@ -324,7 +381,15 @@ function User_get_email($user)
  */
 function User_get_role($user)
 {
-    return $user->role;
+    global $conn, $config;
+    try {
+        return $user->get_role();
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_get_role) ' . $th->getMessage();
+        }
+        return 'user';
+    }
 }
 
 /**
@@ -334,14 +399,21 @@ function User_get_role($user)
  */
 function User_to_user($user)
 {
-    global $conn;
-    $id = $conn->real_escape_string($user->id);
-    $sql = "UPDATE `user` SET `role` = 'user' WHERE `id` = '$id'";
-    $flag = $conn->query($sql);
-    if ($flag) {
-        $user = new User($user->id, $user->username, $user->email, 'user', $user->image);
-        return $user;
-    } else {
+    global $conn, $config;
+    try {
+        $id = $conn->real_escape_string($user->id);
+        $sql = "UPDATE `user` SET `role` = 'user' WHERE `id` = '$id'";
+        $flag = $conn->query($sql);
+        if ($flag) {
+            $user->role = 'user';
+            return true;
+        } else {
+            return false;
+        }
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_to_user) ' . $th->getMessage();
+        }
         return false;
     }
 }
@@ -353,14 +425,21 @@ function User_to_user($user)
  */
 function User_to_writer($user)
 {
-    global $conn;
-    $id = $conn->real_escape_string($user->id);
-    $sql = "UPDATE `user` SET `role` = 'writer' WHERE `id` = '$id'";
-    $flag = $conn->query($sql);
-    if ($flag) {
-        $user = new User($user->id, $user->username, $user->email, 'writer', $user->image);
-        return $user;
-    } else {
+    global $conn, $config;
+    try {
+        $id = $conn->real_escape_string($user->id);
+        $sql = "UPDATE `user` SET `role` = 'writer' WHERE `id` = '$id'";
+        $flag = $conn->query($sql);
+        if ($flag) {
+            $user->role = 'writer';
+            return true;
+        } else {
+            return false;
+        }
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_to_writer) ' . $th->getMessage();
+        }
         return false;
     }
 }
@@ -372,14 +451,21 @@ function User_to_writer($user)
  */
 function User_to_admin($user)
 {
-    global $conn;
-    $id = $conn->real_escape_string($user->id);
-    $sql = "UPDATE `user` SET `role` = 'admin' WHERE `id` = '$id'";
-    $flag = $conn->query($sql);
-    if ($flag) {
-        $user = new User($user->id, $user->username, $user->email, 'admin', $user->image);
-        return $user;
-    } else {
+    global $conn, $config;
+    try {
+        $id = $conn->real_escape_string($user->id);
+        $sql = "UPDATE `user` SET `role` = 'admin' WHERE `id` = '$id'";
+        $flag = $conn->query($sql);
+        if ($flag) {
+            $user->role = 'admin';
+            return true;
+        } else {
+            return false;
+        }
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_to_admin) ' . $th->getMessage();
+        }
         return false;
     }
 }
@@ -390,18 +476,25 @@ function User_to_admin($user)
  */
 function User_get_users()
 {
-    global $conn;
-    $sql = "SELECT * FROM `user`";
-    $flag = $conn->query($sql);
-    $rows = $flag->fetch_all(MYSQLI_ASSOC);
-    if (!$rows) {
+    global $conn, $config;
+    try {
+        $sql = "SELECT * FROM `user`";
+        $flag = $conn->query($sql);
+        $rows = $flag->fetch_all(MYSQLI_ASSOC);
+        if (!$rows) {
+            return false;
+        }
+        $users = [];
+        foreach ($rows as $row) {
+            $users[] = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
+        }
+        return $users;
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(User_get_users) ' . $th->getMessage();
+        }
         return false;
     }
-    $users = [];
-    foreach ($rows as $row) {
-        $users[] = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
-    }
-    return $users;
 }
 
 // 以下为辅助函数，用于密码验证（兼容 PHP 5.3+，无任何扩展依赖）-------------------------------------------
@@ -491,4 +584,3 @@ function verifyPassword($plainPassword, $storedHash)
         return $result === 0;
     }
 }
-
