@@ -14,7 +14,7 @@ class File
     private $__old;  // 给自己管理的副本，判断哪项有改变
 
     // 构造函数
-    public function __construct($id = null, $path = null, $type = null, $name = null, $size = null, $time = null, $user_id = null, $status = null)
+    public function __construct($id = null, $path = null, $type = null, $name = null, $size = null, $time = null, $user_id = null, $status = null, $is_old = false)
     {
         // 初始化属性
         $this->id = $id;
@@ -26,21 +26,9 @@ class File
         $this->user_id = $user_id;
         $this->status = $status;
 
-        // 初始化旧值副本(要以空值调用构造函数，避免无限递归)
-        if (
-            $this->id == null && $this->path == null && $this->type == null &&
-            $this->name == null && $this->size == null && $this->time == null &&
-            $this->user_id == null && $this->status == null
-        ) {
-            $this->__old = new File();
-            $this->__old->id = $this->id;
-            $this->__old->path = $this->path;
-            $this->__old->type = $this->type;
-            $this->__old->name = $this->name;
-            $this->__old->size = $this->size;
-            $this->__old->time = $this->time;
-            $this->__old->user_id = $this->user_id;
-            $this->__old->status = $this->status;
+        // 初始化旧值副本，避免无限递归
+        if (!$is_old) {
+            $this->__old = new File($id, $path, $type, $name, $size, $time, $user_id, $status, true);
         }
     }
 
@@ -143,22 +131,8 @@ class File
      */
     public function set_path($path)
     {
-        global $config, $conn;
-        try {
-            // 更新对象属性
-            $this->path = $path;
-            // 更新数据库记录
-            $sql = "UPDATE file_mapping SET path = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("si", $path, $this->id);
-            $stmt->execute();
-            return $stmt->affected_rows > 0;
-        } catch (\Throwable $th) {
-            if ($config['debug']['use_debug']) {
-                echo '错误：(File::set_path)' . $th->getMessage();
-            }
-            return false;
-        }
+        $this->path = $path;
+        return true;
     }
 
     /**
@@ -168,22 +142,8 @@ class File
      */
     public function set_type($type)
     {
-        global $config, $conn;
-        try {
-            // 更新对象属性
-            $this->type = $type;
-            // 更新数据库记录
-            $sql = "UPDATE file_mapping SET type = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("si", $type, $this->id);
-            $stmt->execute();
-            return $stmt->affected_rows > 0;
-        } catch (\Throwable $th) {
-            if ($config['debug']['use_debug']) {
-                echo '错误：(File::set_type)' . $th->getMessage();
-            }
-            return false;
-        }
+        $this->type = $type;
+        return true;
     }
 
     /**
@@ -193,22 +153,19 @@ class File
      */
     public function set_name($name)
     {
-        global $config, $conn;
-        try {
-            // 更新对象属性
-            $this->name = $name;
-            // 更新数据库记录
-            $sql = "UPDATE file_mapping SET name = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("si", $name, $this->id);
-            $stmt->execute();
-            return $stmt->affected_rows > 0;
-        } catch (\Throwable $th) {
-            if ($config['debug']['use_debug']) {
-                echo '错误：(File::set_name)' . $th->getMessage();
-            }
-            return false;
-        }
+        $this->name = $name;
+        return true;
+    }
+
+    /**
+     * 设置文件大小
+     * @param int $size 文件大小
+     * @return bool 是否设置成功
+     */
+    public function set_size($size)
+    {
+        $this->size = $size;
+        return true;
     }
 
     /**
@@ -218,22 +175,8 @@ class File
      */
     public function set_time($time)
     {
-        global $config, $conn;
-        try {
-            // 更新对象属性
-            $this->time = $time;
-            // 更新数据库记录
-            $sql = "UPDATE file_mapping SET time = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("si", $time, $this->id);
-            $stmt->execute();
-            return $stmt->affected_rows > 0;
-        } catch (\Throwable $th) {
-            if ($config['debug']['use_debug']) {
-                echo '错误：(File::set_time)' . $th->getMessage();
-            }
-            return false;
-        }
+        $this->time = $time;
+        return true;
     }
 
     /**
@@ -243,22 +186,8 @@ class File
      */
     public function set_user_id($user_id)
     {
-        global $config, $conn;
-        try {
-            // 更新对象属性
-            $this->user_id = $user_id;
-            // 更新数据库记录
-            $sql = "UPDATE file_mapping SET user_id = ? WHERE id = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ii", $user_id, $this->id);
-            $stmt->execute();
-            return $stmt->affected_rows > 0;
-        } catch (\Throwable $th) {
-            if ($config['debug']['use_debug']) {
-                echo '错误：(File::set_user_id)' . $th->getMessage();
-            }
-            return false;
-        }
+        $this->user_id = $user_id;
+        return true;
     }
 
     /**
@@ -268,19 +197,162 @@ class File
      */
     public function set_status($status)
     {
-        global $config, $conn;
+        $this->status = $status;
+        return true;
+    }
+
+    /**
+     * 同步文件信息到数据库
+     * 收集所有修改的字段并统一更新到数据库
+     * 同时更新真实文件的路径、时间和状态
+     * @return bool 是否同步成功
+     */
+    public function sync()
+    {
+        global $config, $conn, $MAIN_PATH;
         try {
-            // 更新对象属性
-            $this->status = $status;
-            // 更新数据库记录
-            $sql = "UPDATE file_mapping SET status = ? WHERE id = ?";
+            // 检查文件ID是否存在
+            if (empty($this->id)) {
+                if ($config['debug']['use_debug']) {
+                    echo '错误：(File::sync)文件ID不存在';
+                }
+                return false;
+            }
+
+            // 获取旧文件对象
+            $old_file = $this->get_old();
+            if (!$old_file) {
+                if ($config['debug']['use_debug']) {
+                    echo '错误：(File::sync)旧文件对象不存在';
+                }
+                return false;
+            }
+
+            // 真实文件路径处理
+            $path = $old_file->get_path();
+            
+            // 检查路径是否已经是绝对路径
+            if (strpos($path, ':/') !== false || strpos($path, ':\\') !== false) {
+                // 已经是绝对路径，直接使用
+                $full_path = $path;
+            } else {
+                // 相对路径，拼接$MAIN_PATH
+                $full_path = $MAIN_PATH . $path;
+            }
+            
+            // 检查文件是否存在
+            if (!file_exists($full_path)) {
+                if ($this->status != 0) { // 如果不是删除操作，才抛出错误
+                    throw new Exception("文件不存在：{$full_path}");
+                }
+            }
+
+            // 检查新旧文件是否完全一致
+            if ($this->equals($old_file)) {
+                // 新旧文件对象完全一致，无需更新
+                return true;
+            }
+
+            // 真实文件操作 - 移除修改真实文件时间的代码，time字段仅作为记录时间
+            
+            if ($this->status == 0) {
+                // 删除文件
+                if (file_exists($full_path)) {
+                    unlink($full_path);
+                }
+            }
+            
+            $path_changed = false;
+            if ($this->path != $old_file->path) {
+                // 确定新路径
+                if (strpos($this->path, ':/') !== false || strpos($this->path, ':\\') !== false) {
+                    // 新路径是绝对路径
+                    $new_full_path = $this->path;
+                } else {
+                    // 新路径是相对路径
+                    $new_full_path = $MAIN_PATH . $this->path;
+                }
+                
+                // 更新文件路径
+                rename($full_path, $new_full_path);
+                $full_path = $new_full_path;
+                $path_changed = true;
+            }
+
+            // 构建更新的字段和参数
+            $update_fields = [];
+            $params = [];
+            $param_types = '';
+
+            // 检查哪些字段需要更新
+            if ($path_changed || isset($this->path)) {
+                $update_fields[] = 'path = ?';
+                $params[] = &$this->path;
+                $param_types .= 's';
+            }
+            if (isset($this->type)) {
+                $update_fields[] = 'type = ?';
+                $params[] = &$this->type;
+                $param_types .= 's';
+            }
+            if (isset($this->name)) {
+                $update_fields[] = 'name = ?';
+                $params[] = &$this->name;
+                $param_types .= 's';
+            }
+            if (isset($this->size)) {
+                $update_fields[] = 'size = ?';
+                $params[] = &$this->size;
+                $param_types .= 'i';
+            }
+            if (isset($this->time)) {
+                $update_fields[] = 'time = ?';
+                $params[] = &$this->time;
+                $param_types .= 's';
+            }
+            if (isset($this->user_id)) {
+                $update_fields[] = 'user_id = ?';
+                $params[] = &$this->user_id;
+                $param_types .= 'i';
+            }
+            if (isset($this->status)) {
+                $update_fields[] = 'status = ?';
+                $params[] = &$this->status;
+                $param_types .= 'i';
+            }
+
+            // 如果没有字段需要更新，直接返回成功
+            if (empty($update_fields)) {
+                return true;
+            }
+
+            // 添加文件ID作为WHERE条件
+            $params[] = &$this->id;
+            $param_types .= 'i';
+
+            // 构建SQL语句
+            $sql = "UPDATE file_mapping SET " . implode(', ', $update_fields) . " WHERE id = ?";
+
+            // 执行数据库更新
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ii", $status, $this->id);
+            
+            // 使用引用传递参数
+            switch(count($params)) {
+                case 1: $stmt->bind_param($param_types, $params[0]); break;
+                case 2: $stmt->bind_param($param_types, $params[0], $params[1]); break;
+                case 3: $stmt->bind_param($param_types, $params[0], $params[1], $params[2]); break;
+                case 4: $stmt->bind_param($param_types, $params[0], $params[1], $params[2], $params[3]); break;
+                case 5: $stmt->bind_param($param_types, $params[0], $params[1], $params[2], $params[3], $params[4]); break;
+                case 6: $stmt->bind_param($param_types, $params[0], $params[1], $params[2], $params[3], $params[4], $params[5]); break;
+                case 7: $stmt->bind_param($param_types, $params[0], $params[1], $params[2], $params[3], $params[4], $params[5], $params[6]); break;
+                case 8: $stmt->bind_param($param_types, $params[0], $params[1], $params[2], $params[3], $params[4], $params[5], $params[6], $params[7]); break;
+            }
+            
             $stmt->execute();
             return $stmt->affected_rows > 0;
         } catch (\Throwable $th) {
             if ($config['debug']['use_debug']) {
-                echo '错误：(File::set_status)' . $th->getMessage();
+                echo '错误：(File::sync)' . $th->getMessage();
             }
             return false;
         }

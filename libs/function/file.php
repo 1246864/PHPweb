@@ -3,6 +3,18 @@
 // 对应数据表名：file_mapping
 // 字段：id, path, size, type, name, time, user_id, status
 
+// 具体实现：
+// id: 文件在数据库记录的id
+// path: 文件实体存储的数据, 为主目录起的相对路径
+// size: 文件大小
+// type: 文件类型
+// name: 文件上传前的名称，只存储于数据库
+// time: 文件上传时间
+// user_id: 文件上传用户ID
+// status: 文件状态(1: 正常, 0: 已删除)
+
+
+
 // 引入预处理库
 include_once __DIR__ . '/../../include/_PRE.php';
 
@@ -31,7 +43,8 @@ function File_get_File($key)
         if ($key instanceof User) {
             $key = $key->id;
         }
-        $sql = "SELECT * FROM file_mapping WHERE id = ? or path = ? or name = ? or type = ? or status = ? and user_id = ?";
+        // 修复SQL查询逻辑：正确使用括号分组条件
+        $sql = "SELECT * FROM file_mapping WHERE id = ? or path = ? or name = ? or type = ? or (status = ? and user_id = ?)";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("isssss", $key, $key, $key, $key, $key, $key);
         $stmt->execute();
@@ -55,15 +68,16 @@ function File_get_File($key)
 /**
  * 在数据库查找所有匹配的文件
  * @param int|string|User $key 文件标识符
- * @return array<User>|null 文件对象数组
+ * @return array<File>|null 文件对象数组
  */
 function File_get_Files($key){
     global $conn, $config;
     try {
-if ($key instanceof User) {
-            $key = $key->id;
+        if ($key instanceof User) {
+            $key = $key->id;  // 转换为用户ID
         }
-        $sql = "SELECT * FROM file_mapping WHERE id = ? or path = ? or name = ? or type = ? or status = ? and user_id = ?";
+        // 修复SQL查询逻辑：正确使用括号分组条件
+        $sql = "SELECT * FROM file_mapping WHERE id = ? or path = ? or name = ? or type = ? or (status = ? and user_id = ?)";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("isssss", $key, $key, $key, $key, $key, $key);
         $stmt->execute();
@@ -85,7 +99,12 @@ if ($key instanceof User) {
     }
 }
 
-// 创建文件映射
+/**
+ * 创建文件映射
+ * 注册文件到数据库进行管理
+ * @param string $path 文件路径
+ * @return File|null 文件对象
+ */
 function File_create($path){
     global $conn, $config, $MAIN_PATH;
     try {
@@ -102,7 +121,7 @@ function File_create($path){
         $size = filesize($path);
         $type = isset($file_info['extension']) ? $file_info['extension'] : '';
         $name = $file_info['basename'];
-        $time = filemtime($path);
+        $time = time(); // 使用当前时间作为记录时间，而非文件修改时间
         $status = 1;
 
         // 查找用户ID
@@ -116,7 +135,9 @@ function File_create($path){
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("sssssss", $path, $size, $type, $name, $time, $user_id, $status);
         $stmt->execute();
-        return $conn->insert_id;
+        // 创建文件对象
+        $file_obj = new File($conn->insert_id, $path, $type, $name, $size, $time, $user_id, $status);
+        return $file_obj;
     } catch (\Throwable $th) {
         if ($config['debug']['use_debug']) {
             echo '错误：(File_create)' . $th->getMessage();
@@ -127,45 +148,14 @@ function File_create($path){
 
 /**
  * 同步文件信息：把数据库中的文件信息同步到文件系统中
+ * 注意：此函数已被File::sync()方法取代，保留用于兼容
  * @param File $file 文件对象
  * @return bool 是否同步成功
  */
 function File_update($file)
 {
-    global $config, $MAIN_PATH;
-    try {
-        $old_file = $file->get_old();
-        $path = $old_file->get_path();
-        // 根据$path找到对应文件,由项目主目录开始
-        $full_path = $MAIN_PATH . $path;
-        if (!file_exists($full_path)) {
-            throw new Exception("文件不存在：{$full_path}");
-        }
-        if ($old_file && $file->equals($old_file)) {
-            // 新旧文件对象完全一致，无需更新
-            return true;
-        }
-        if ($file->time != $old_file->time) {
-            // 更新文件上传时间
-            touch($full_path, $file->time);
-        }
-        if ($file->status == 0) {
-            // 删除文件
-            unlink($full_path);
-        }
-        if ($file->path != $old_file->path) {
-            // 更新文件路径
-            rename($full_path, $MAIN_PATH . $file->path);
-            $full_path = $MAIN_PATH . $file->path;
-        }
-
-        return true;
-    } catch (\Throwable $th) {
-        if ($config['debug']['use_debug']) {
-            echo '错误：(File_update)' . $th->getMessage();
-        }
-        return false;
-    }
+    // 直接调用File类的sync方法，保持逻辑一致性
+    return $file->sync();
 }
 /**
  * 删除文件
@@ -181,8 +171,9 @@ function File_delete($file){
         if (!file_exists($full_path)) {
             throw new Exception("文件不存在：{$full_path}");
         }
-        // 删除文件
-        unlink($full_path);
+        // 更新文件状态
+        $file->status = 0;
+        File_update($file);
         return true;
     } catch (\Throwable $th) {
         if ($config['debug']['use_debug']) {
@@ -192,6 +183,66 @@ function File_delete($file){
     }
 }
 
+/**
+ * 根据前端上传的文件信息创建文件映射
+ * 处理文件上传并注册到数据库进行管理
+ * @param array $FILE 前端上传的文件信息数组（$_FILES中的元素）
+ * @return File|null 文件对象
+ */
+function File_save($FILE){
+    global $config, $MAIN_PATH, $conn;
+    
+    try {
+        if ($FILE['error'] != UPLOAD_ERR_OK) {
+            throw new Exception("文件上传错误：{$FILE['error']}");
+        }
+        
+        // 确保目标目录存在
+        $target_dir = $MAIN_PATH . "files/";
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0755, true);
+        }
+        
+        // 将文件从临时目录转存到项目的files目录，并重命名为时间戳+原始文件名
+        $target_file = $target_dir . time() . basename($FILE['name']);
+        if (!move_uploaded_file($FILE['tmp_name'], $target_file)) {
+            throw new Exception("文件移动失败");
+        }
+        
+        // 计算相对路径，从项目主目录开始
+        $path = str_replace($MAIN_PATH, '', $target_file);
+        
+        // 获取文件信息
+        $file_info = pathinfo($target_file);
+        $size = filesize($target_file);
+        $type = $FILE['type']; // 使用前端提供的MIME类型
+        $extension = isset($file_info['extension']) ? $file_info['extension'] : '';
+        $name = $file_info['basename'];
+        $time = time(); // 使用当前时间作为记录时间
+        $status = 1;
+
+        // 查找用户ID
+        $user_id = 0;
+        if (isset($_SESSION['user']['is_login']) && $_SESSION['user']['is_login']){
+            $user_id = $_SESSION['user']['id'];
+        }
+        
+        // 插入数据库
+        $sql = "INSERT INTO file_mapping (path, size, type, name, time, user_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sssssss", $path, $size, $type, $name, $time, $user_id, $status);
+        $stmt->execute();
+        
+        // 创建文件对象
+        $file_obj = new File($conn->insert_id, $path, $type, $name, $size, $time, $user_id, $status);
+        return $file_obj;
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(File_save)' . $th->getMessage();
+        }
+        return null;
+    }
+}
 
 
 // ----------------------获取信息----------------------------

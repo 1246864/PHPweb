@@ -20,14 +20,16 @@ if (!file_exists($test_file_path)) {
 echo "<h1>File.php 功能测试</h1>";
 
 echo "<h2>1. 测试 File_create() - 创建文件映射</h2>";
-$file_id = File_create($test_file_path);
-if ($file_id) {
+$file_obj = File_create($test_file_path);
+if ($file_obj) {
+    $file_id = $file_obj->get_id();
     echo "<p style='color: green;'>✓ 成功创建文件映射，ID: {$file_id}</p>";
 } else {
     echo "<p style='color: red;'>✗ 创建文件映射失败</p>";
 }
 
 echo "<h2>2. 测试 File_get_File() - 获取文件对象</h2>";
+// 重新获取文件对象以确保测试完整性
 $file_obj = File_get_File($file_id);
 if ($file_obj) {
     echo "<p style='color: green;'>✓ 成功获取文件对象</p>";
@@ -38,7 +40,9 @@ if ($file_obj) {
     echo "<li>类型: " . File_get_type($file_obj) . "</li>";
     echo "<li>名称: " . File_get_name($file_obj) . "</li>";
     echo "<li>大小: " . File_get_size($file_obj) . " bytes</li>";
-    echo "<li>时间: " . date('Y-m-d H:i:s', File_get_time($file_obj)) . "</li>";
+    $file_time = File_get_time($file_obj);
+    $time_display = is_numeric($file_time) ? date('Y-m-d H:i:s', $file_time) : "无效时间";
+    echo "<li>时间: " . $time_display . "</li>";
     echo "<li>用户ID: " . File_get_user_id($file_obj) . "</li>";
     echo "<li>状态: " . File_get_status($file_obj) . "</li>";
     echo "</ul>";
