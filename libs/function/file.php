@@ -18,9 +18,11 @@
 // 引入预处理库
 include_once __DIR__ . '/../../include/_PRE.php';
 
+// 引入全局函数库
+include_once __DIR__ . '/function.php';
+
 include_once __DIR__ . '/../../config/config.php';
 include_once __DIR__ . '/../../include/conn.php';
-include_once __DIR__ . '/function.php';
 
 // 引入文件类
 include_once __DIR__ . '/class/File.php';
@@ -28,23 +30,34 @@ include_once __DIR__ . '/class/File.php';
 // 引入用户类
 include_once __DIR__ . '/class/User.php';
 
-// 项目主目录
-$MAIN_PATH = __DIR__ . '/../../';
+// 项目主目录 - 使用function.php中已定义的常量
+// 避免重复定义
 
 /**
  * 在数据库查找第一个匹配的文件, 推荐用id查找
  * @param int|string|User $key 文件标识符
  * @return File|null 文件对象
  */
-function File_get_File($key)
+function File_get_file($key)
 {
     global $conn, $config;
     try {
+        // 首先只用id进行查找
+        $result = $conn->query("SELECT * FROM file_mapping WHERE id = $key");
+        $row = $result->fetch_assoc();
+        if ($row) {
+            $file_obj = new File($row['id'], $row['path'], $row['type'], $row['name'], $row['size'], $row['time'], $row['user_id'], $row['status']);
+            return $file_obj;
+        }
+
+        // 其次用其他字段进行查找
+
+        // 如果输入为用户对象，转换为用户ID
         if ($key instanceof User) {
             $key = $key->id;
         }
         // 修复SQL查询逻辑：正确使用括号分组条件
-        $sql = "SELECT * FROM file_mapping WHERE id = ? or path = ? or name = ? or type = ? or (status = ? and user_id = ?)";
+        $sql = "SELECT * FROM file_mapping WHERE id = ? or path = ? or name = ? or type = ? or status = ? or user_id = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("isssss", $key, $key, $key, $key, $key, $key);
         $stmt->execute();
@@ -59,7 +72,7 @@ function File_get_File($key)
         }
     } catch (\Throwable $th) {    // 所有错误
         if ($config['debug']['use_debug']) {
-            echo '错误：(File_get_File)' . $th->getMessage();
+            echo '错误：(File_get_file)' . $th->getMessage();
         }
         return null;
     }
@@ -70,7 +83,7 @@ function File_get_File($key)
  * @param int|string|User $key 文件标识符
  * @return array<File>|null 文件对象数组
  */
-function File_get_Files($key){
+function File_get_all_file($key){
     global $conn, $config;
     try {
         if ($key instanceof User) {
@@ -93,11 +106,36 @@ function File_get_Files($key){
         }
     } catch (\Throwable $th) {
         if ($config['debug']['use_debug']) {
-            echo '错误：(File_get_Files)' . $th->getMessage();
+            echo '错误：(File_get_all_file)' . $th->getMessage();
         }
         return null;
     }
 }
+
+/**
+ * 根据文件ID获取文件路径
+ * @param int $key 文件ID
+ * @return string|null 文件路径
+ */
+function File_id_to_path($key){
+    global $conn, $config;
+    try {
+        $sql = "SELECT path FROM file_mapping WHERE id = $key";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        if ($row) {
+            return $row['path']; // 返回文件路径
+        } else {
+            return null;
+        }
+    } catch (\Throwable $th) {
+        if ($config['debug']['use_debug']) {
+            echo '错误：(File_id_to_path)' . $th->getMessage();
+        }
+        return null;
+    }
+}
+
 
 /**
  * 创建文件映射
@@ -106,16 +144,23 @@ function File_get_Files($key){
  * @return File|null 文件对象
  */
 function File_create($path){
-    global $conn, $config, $MAIN_PATH;
+    global $conn, $config;
     try {
         // 判断文件是否存在
         if (!file_exists($path)) {
-            $path = $MAIN_PATH . $path;
+            $path = MAIN_PATH . $path;
+            $path = realpath($path); // 规范化路径
             // 判断文件是否存在
             if (!file_exists($path)) {
                 throw new Exception("文件不存在：{$path}");
             }
         }
+
+        $path = realpath($path); // 规范化路径
+        // 计算相对路径，从项目主目录开始
+        $path = str_replace(MAIN_PATH, '', $path);
+        $path = ltrim($path, '/'); // 移除开头的斜杠
+
         // 获取文件信息
         $file_info = pathinfo($path);
         $size = filesize($path);
@@ -163,11 +208,12 @@ function File_update($file)
  * @return bool 是否删除成功
  */
 function File_delete($file){
-    global $config, $MAIN_PATH;
+    global $config;
     try {
         $path = $file->get_path();
         // 根据$path找到对应文件,由项目主目录开始
-        $full_path = $MAIN_PATH . $path;
+        $full_path = MAIN_PATH . $path;
+        $full_path = realpath($full_path); // 规范化路径
         if (!file_exists($full_path)) {
             throw new Exception("文件不存在：{$full_path}");
         }
@@ -190,7 +236,7 @@ function File_delete($file){
  * @return File|null 文件对象
  */
 function File_save($FILE){
-    global $config, $MAIN_PATH, $conn;
+    global $config, $conn;
     
     try {
         if ($FILE['error'] != UPLOAD_ERR_OK) {
@@ -198,7 +244,8 @@ function File_save($FILE){
         }
         
         // 确保目标目录存在
-        $target_dir = $MAIN_PATH . "files/";
+        $target_dir = MAIN_PATH . "files/";
+        $target_dir = realpath($target_dir) . "/"; // 规范化路径
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0755, true);
         }
@@ -208,9 +255,11 @@ function File_save($FILE){
         if (!move_uploaded_file($FILE['tmp_name'], $target_file)) {
             throw new Exception("文件移动失败");
         }
+        $target_file = realpath($target_file); // 规范化路径
         
         // 计算相对路径，从项目主目录开始
-        $path = str_replace($MAIN_PATH, '', $target_file);
+        $path = str_replace(MAIN_PATH, '', $target_file);
+        $path = ltrim($path, '/'); // 移除开头的斜杠
         
         // 获取文件信息
         $file_info = pathinfo($target_file);
@@ -473,14 +522,14 @@ function File_set_time($file, $time)
 /**
  * 设置文件所属用户ID
  * @param File $file 文件对象
- * @param int $user_id 用户ID
+ * @param int|User $user 用户ID或User对象
  * @return bool 是否设置成功
  */
-function File_set_user_id($file, $user_id)
+function File_set_user_id($file, $user)
 {
     global $config;
     try {
-        return $file->set_user_id($user_id);
+        return $file->set_user_id($user);
     } catch (\Throwable $th) {
         if ($config['debug']['use_debug']) {
             echo '错误：(File_set_user_id)' . $th->getMessage();
@@ -489,21 +538,4 @@ function File_set_user_id($file, $user_id)
     }
 }
 
-/**
- * 设置文件状态
- * @param File $file 文件对象
- * @param int $status 文件状态(0:正常, 1:删除)
- * @return bool 是否设置成功
- */
-function File_set_status($file, $status)
-{
-    global $config;
-    try {
-        return $file->set_status($status);
-    } catch (\Throwable $th) {
-        if ($config['debug']['use_debug']) {
-            echo '错误：(File_set_status)' . $th->getMessage();
-        }
-        return false;
-    }
-}
+

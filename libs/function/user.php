@@ -474,13 +474,13 @@ function User_to_admin($user)
  * 获取所有用户信息
  * @return bool|array<User> 用户信息对象数组（包含用户名、密码哈希、邮箱等）
  */
-function User_get_users()
+function User_get_all_user()
 {
     global $conn, $config;
     try {
         $sql = "SELECT * FROM `user`";
-        $flag = $conn->query($sql);
-        $rows = $flag->fetch_all(MYSQLI_ASSOC);
+        $result = $conn->query($sql);
+        $rows = $result->fetch_all(MYSQLI_ASSOC);
         if (!$rows) {
             return false;
         }
@@ -491,7 +491,7 @@ function User_get_users()
         return $users;
     } catch (\Throwable $th) {
         if ($config['debug']['use_debug']) {
-            echo '错误：(User_get_users) ' . $th->getMessage();
+            echo '错误：(User_get_all_user) ' . $th->getMessage();
         }
         return false;
     }

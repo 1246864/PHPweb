@@ -1,4 +1,15 @@
 <?php
+// 引入预处理库
+include_once __DIR__ . '/../../include/_PRE.php';
+
+// 引入配置文件
+include_once __DIR__ . '/../../config/config.php';
+
+// 引入数据库连接文件
+include_once __DIR__ . '/../../include/conn.php';
+
+// 引入全局函数库
+include_once __DIR__ . '/../function.php';
 
 // 定义用户类
 class User

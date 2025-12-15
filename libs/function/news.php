@@ -36,18 +36,25 @@ class News
         $this->time = $time;
     }
 }
-function News_get_news()
+
+/**
+ * 获取所有新闻
+ * @return array<News>|null 新闻数组
+ */
+function News_get_all_news()
 {
     global $conn, $config;
     try {
         $sql = "SELECT * FROM news";
-        $result = mysqli_query($conn, $sql);
-        $news = mysqli_fetch_all($result, MYSQLI_ASSOC);
-        mysqli_close($conn);
+        $result = $conn->query($sql);
+        $news = [];
+        while ($row = $result->fetch_assoc()) {
+            $news[] = new News($row['id'], $row['title'], $row['title2'], $row['image_id'], $row['style'], $row['content'], $row['user_id'], $row['time']);
+        }
         return $news;
     } catch (\Throwable $th) {
         if($config['debug']['use_debug']){
-            echo '错误：(News_get_news)' . $th->getMessage();
+            echo '错误：(News_get_all_news)' . $th->getMessage();
         }
         return null;
     }

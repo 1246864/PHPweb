@@ -1,5 +1,17 @@
 <?php
 
+// 引入预处理库
+include_once __DIR__ . '/../../include/_PRE.php';
+
+// 引入配置文件
+include_once __DIR__ . '/../../config/config.php';
+
+// 引入数据库连接文件
+include_once __DIR__ . '/../../include/conn.php';
+
+// 引入全局函数库
+include_once __DIR__ . '/../function.php';
+
 // 定义文件类
 class File
 {
@@ -10,7 +22,7 @@ class File
     public $size;       // 文件大小
     public $time;       // 文件上传时间
     public $user_id;    // 用户ID
-    public $status;     // 文件状态(0:正常, 1:删除)
+    public $status;     // 文件状态(1:正常, 0:删除)
     private $__old;  // 给自己管理的副本，判断哪项有改变
 
     // 构造函数
@@ -158,17 +170,6 @@ class File
     }
 
     /**
-     * 设置文件大小
-     * @param int $size 文件大小
-     * @return bool 是否设置成功
-     */
-    public function set_size($size)
-    {
-        $this->size = $size;
-        return true;
-    }
-
-    /**
      * 设置文件上传时间
      * @param string $time 文件上传时间
      * @return bool 是否设置成功
@@ -181,23 +182,16 @@ class File
 
     /**
      * 设置文件所属用户ID
-     * @param int $user_id 用户ID
+     * @param int|User $user 用户ID或User对象
      * @return bool 是否设置成功
      */
-    public function set_user_id($user_id)
+    public function set_user_id($user)
     {
-        $this->user_id = $user_id;
-        return true;
-    }
-
-    /**
-     * 设置文件状态
-     * @param int $status 文件状态(0:正常, 1:删除)
-     * @return bool 是否设置成功
-     */
-    public function set_status($status)
-    {
-        $this->status = $status;
+        if (is_object($user) && get_class($user) == 'User') {
+            $this->user_id = $user->get_id();
+        } else {
+            $this->user_id = $user;
+        }
         return true;
     }
 
@@ -209,7 +203,7 @@ class File
      */
     public function sync()
     {
-        global $config, $conn, $MAIN_PATH;
+        global $config, $conn;
         try {
             // 检查文件ID是否存在
             if (empty($this->id)) {
@@ -223,7 +217,7 @@ class File
             $old_file = $this->get_old();
             if (!$old_file) {
                 if ($config['debug']['use_debug']) {
-                    echo '错误：(File::sync)旧文件对象不存在';
+                    throw new Exception('错误：(File::sync)旧文件对象不存在');
                 }
                 return false;
             }
@@ -236,8 +230,9 @@ class File
                 // 已经是绝对路径，直接使用
                 $full_path = $path;
             } else {
-                // 相对路径，拼接$MAIN_PATH
-                $full_path = $MAIN_PATH . $path;
+                // 相对路径，拼接MAIN_PATH
+                $full_path = MAIN_PATH . $path;
+                $full_path = realpath($full_path); // 规范化路径
             }
             
             // 检查文件是否存在
@@ -256,7 +251,7 @@ class File
             // 真实文件操作 - 移除修改真实文件时间的代码，time字段仅作为记录时间
             
             if ($this->status == 0) {
-                // 删除文件
+                // 删除文件 (0:删除)
                 if (file_exists($full_path)) {
                     unlink($full_path);
                 }
@@ -267,15 +262,22 @@ class File
                 // 确定新路径
                 if (strpos($this->path, ':/') !== false || strpos($this->path, ':\\') !== false) {
                     // 新路径是绝对路径
-                    $new_full_path = $this->path;
+                    $new_full_path = realpath($this->path);
                 } else {
                     // 新路径是相对路径
-                    $new_full_path = $MAIN_PATH . $this->path;
+                    $new_full_path = MAIN_PATH . $this->path;
+                    $new_full_path = realpath($new_full_path); // 规范化路径
                 }
                 
                 // 更新文件路径
                 rename($full_path, $new_full_path);
                 $full_path = $new_full_path;
+                // 将绝对路径转换为相对路径
+                $full_path = realpath($new_full_path);   // 确保路径是绝对路径
+                $this->path = str_replace(MAIN_PATH, '', $full_path);
+                // 去掉开头的斜杠
+                $this->path = ltrim($this->path, '/');
+                
                 $path_changed = true;
             }
 
