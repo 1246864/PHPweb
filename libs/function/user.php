@@ -246,19 +246,26 @@ function User_check_email($email)
 
 /**
  * 获取用户信息
- * @param string $key 用户名或邮箱或idid
- * @return bool|User 用户信息对象（包含用户名、密码哈希、邮箱等）
+ * @param string|null $key 用户名或邮箱或id(当为null时,默认获取当前会话中的用户信息)
+ * @return null|User 用户信息对象
  */
-function User_get_user($key)
+function User_get_user($key=null)
 {
     global $conn, $config;
     try {
+        if ($key === null) {
+            // 直接通过session构造
+            if (!isset($_SESSION['user']) || !isset($_SESSION['user']['is_login'])) {
+                return null;
+            }
+            $key = $_SESSION['user']['id'];
+        }
         $key = $conn->real_escape_string($key);
         $sql = "SELECT * FROM `user` WHERE `username` = '$key' OR `email` = '$key' OR `id` = '$key'";
         $flag = $conn->query($sql);
         $row = $flag->fetch_assoc();
         if (!$row) {
-            return false;
+            return null;
         }
         $user = new User($row['id'], $row['username'], $row['email'], $row['role'], $row['image']);
         return $user;
@@ -266,7 +273,7 @@ function User_get_user($key)
         if ($config['debug']['use_debug']) {
             echo '错误：(User_get_user) ' . $th->getMessage();
         }
-        return false;
+        return null;
     }
 }
 
