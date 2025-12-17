@@ -290,7 +290,7 @@ function User_set_name($user, $new_username)
         if (User_check_name($new_username)) {
             return false;
         } else {
-            return $user->set_username($new_username);
+            return $user->set_name($new_username);
         }
     } catch (\Throwable $th) {
         if ($config['debug']['use_debug']) {
@@ -413,7 +413,7 @@ function User_to_user($user)
         $flag = $conn->query($sql);
         if ($flag) {
             $user->role = 'user';
-            return true;
+            return $user;
         } else {
             return false;
         }
@@ -439,7 +439,7 @@ function User_to_writer($user)
         $flag = $conn->query($sql);
         if ($flag) {
             $user->role = 'writer';
-            return true;
+            return $user;
         } else {
             return false;
         }
@@ -465,7 +465,7 @@ function User_to_admin($user)
         $flag = $conn->query($sql);
         if ($flag) {
             $user->role = 'admin';
-            return true;
+            return $user;
         } else {
             return false;
         }

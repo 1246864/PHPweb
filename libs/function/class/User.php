@@ -1,15 +1,15 @@
 <?php
 // 引入预处理库
-include_once __DIR__ . '/../../include/_PRE.php';
+include_once __DIR__ . '/../../../include/_PRE.php';
 
 // 引入配置文件
-include_once __DIR__ . '/../../config/config.php';
+include_once MAIN_PATH . 'config/config.php';
 
 // 引入数据库连接文件
-include_once __DIR__ . '/../../include/conn.php';
+include_once MAIN_PATH . 'include/conn.php';
 
 // 引入全局函数库
-include_once __DIR__ . '/../function.php';
+include_once MAIN_PATH . 'libs/function/function.php';
 
 // 定义用户类
 class User
@@ -91,72 +91,101 @@ class User
     /**
      * 设置用户名
      * @param string $username 用户名
-     * @return bool 是否设置成功
+     * @return bool|User 设置成功返回当前对象，失败返回false
      */
-    public function set_username($username)
+    public function set_name($username)
     {
         global $config, $conn;
         // 更新对象属性
         $this->username = $username;
+
+        try{
         // 更新数据库记录
         $sql = "UPDATE `user` SET `username` = ? WHERE `id` = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("si", $username, $this->id);
         $stmt->execute();
-        return $stmt->affected_rows > 0;
+        return $stmt->affected_rows > 0 ? $this : false;
+        }catch(\Throwable $e){
+            if ($config['debug']['use_debug']) {
+                echo '错误：(User_set_name) ' . $e->getMessage();
+            }
+            return false;
+        }
     }
 
     /**
      * 设置用户邮箱
      * @param string $email 邮箱
-     * @return bool 是否设置成功
+     * @return bool|User 设置成功返回当前对象，失败返回false
      */
     public function set_email($email)
     {
         global $config, $conn;
         // 更新对象属性
         $this->email = $email;
+        try{
         // 更新数据库记录
         $sql = "UPDATE `user` SET `email` = ? WHERE `id` = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("si", $email, $this->id);
         $stmt->execute();
-        return $stmt->affected_rows > 0;
+        return $stmt->affected_rows > 0 ? $this : false;
+        }catch(\Throwable $e){
+            if ($config['debug']['use_debug']) {
+                echo '错误：(User_set_email) ' . $e->getMessage();
+            }
+            return false;
+        }
     }
 
     /**
      * 设置用户角色
      * @param string $role 用户角色
-     * @return bool 是否设置成功
+     * @return bool|User 设置成功返回当前对象，失败返回false
      */
     public function set_role($role)
     {
         global $config, $conn;
         // 更新对象属性
         $this->role = $role;
+        try{
         // 更新数据库记录
         $sql = "UPDATE `user` SET `role` = ? WHERE `id` = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("si", $role, $this->id);
         $stmt->execute();
-        return $stmt->affected_rows > 0;
+        return $stmt->affected_rows > 0 ? $this : false;
+        }catch(\Throwable $e){
+            if ($config['debug']['use_debug']) {
+                echo '错误：(User_set_role) ' . $e->getMessage();
+            }
+            return false;
+        }
     }
 
     /**
      * 设置用户头像
      * @param string $image 用户头像
-     * @return bool 是否设置成功
+     * @return bool|User 设置成功返回当前对象，失败返回false
      */
     public function set_image($image)
     {
         global $config, $conn;
         // 更新对象属性
         $this->image = $image;
+        try{
         // 更新数据库记录
         $sql = "UPDATE `user` SET `image` = ? WHERE `id` = ?";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("si", $image, $this->id);
         $stmt->execute();
-        return $stmt->affected_rows > 0;
+        return $stmt->affected_rows > 0 ? $this : false;
+        }catch(\Throwable $e){
+            if ($config['debug']['use_debug']) {
+                echo '错误：(User_set_image) ' . $e->getMessage();
+            }
+            return false;
+        }
     }
 }

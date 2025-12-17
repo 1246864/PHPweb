@@ -6,6 +6,12 @@
 if (!isset($x__RPE_OK)) {
     $x__RPE_OK = true;
 
+    // 定义常量
+    // 使用 dirname 获取项目根目录，确保在任何文件中引用时都能正确指向主目录
+    // PHP 5兼容写法：多次调用dirname()
+    define('MAIN_PATH', dirname(__DIR__) . '/');
+
+
     // 500 错误页面快捷跳转
     function Error_500($error_message)
     {

@@ -7,7 +7,7 @@ header('Content-Type: text/html; charset=utf-8');
 // 初始化测试环境
 ob_start();
 
-include_once __DIR__ . '/../headers/user.php';
+include_once __DIR__ . '/../../headers/user.php';
 
 // 初始化测试环境
 echo "<h1>PHPweb User API 测试脚本</h1>";
@@ -143,8 +143,8 @@ echo "<hr>";
 echo "<h2>7. 测试获取所有用户</h2>";
 
 if ($user_info) {
-    $all_users = User_get_users();
-    echo "<p><strong>User_get_users() 测试:</strong> " . ($all_users ? "成功" : "失败") . "</p>";
+    $all_users = User_get_all_user();
+    echo "<p><strong>User_get_all_user() 测试:</strong> " . ($all_users ? "成功" : "失败") . "</p>";
     if ($all_users) {
         echo "<p>共获取到 " . count($all_users) . " 个用户</p>";
         // 只显示前5个用户的信息
